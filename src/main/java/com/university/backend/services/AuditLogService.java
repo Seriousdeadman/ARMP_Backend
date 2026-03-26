@@ -18,7 +18,7 @@ public class AuditLogService {
     private final AuditLogRepository auditLogRepository;
 
     @Async
-    public void log(User user, AuditLogDTO dto, HttpServletRequest request) {
+    public void log(User user, AuditLogDTO dto, String ipAddress) {
         AuditLog log = AuditLog.builder()
                 .user(user)
                 .action(dto.getAction())
@@ -26,7 +26,7 @@ public class AuditLogService {
                 .page(dto.getPage())
                 .method(dto.getMethod())
                 .details(dto.getDetails())
-                .ipAddress(request.getRemoteAddr())
+                .ipAddress(ipAddress)
                 .build();
         auditLogRepository.save(log);
     }
