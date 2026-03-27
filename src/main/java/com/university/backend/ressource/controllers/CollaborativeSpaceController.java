@@ -1,10 +1,10 @@
-package com.university.backend.controllers;
+package com.university.backend.ressource.controllers;
 
-import com.university.backend.dto.CollaborativeSpaceDTO;
-import com.university.backend.entities.CollaborativeSpace;
-import com.university.backend.enums.ResourceStatus;
-import com.university.backend.enums.SpaceType;
-import com.university.backend.services.CollaborativeSpaceService;
+import com.university.backend.ressource.dto.CollaborativeSpaceDTO;
+import com.university.backend.ressource.entities.CollaborativeSpace;
+import com.university.backend.ressource.enums.ResourceStatus;
+import com.university.backend.ressource.enums.SpaceType;
+import com.university.backend.ressource.services.CollaborativeSpaceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

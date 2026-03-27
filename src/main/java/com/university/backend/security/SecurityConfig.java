@@ -32,46 +32,49 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
-                );
+    /*
+   @Bean
+   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+       http
+               .csrf(AbstractHttpConfigurer::disable)
+               .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+               .sessionManagement(session ->
+                       session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+               )
+               .authorizeHttpRequests(auth -> auth
+                       .anyRequest().permitAll()
+               );
 
-        return http.build();
-    }
-  /*  @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(
-                                "/api/auth/login",
-                                "/api/auth/register",
-                                "/api/auth/refresh",
-                                "/api/auth/validate",
-                                "/api/auth/user/**"
-                        ).permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
-                        .requestMatchers("/api/audit/**").authenticated()
-                        .anyRequest().authenticated()
-                )
-                .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+       return http.build();
+   }
 
-        return http.build();
-    }
+     */
+ /*  @Bean
+   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+       http
+               .csrf(AbstractHttpConfigurer::disable)
+               .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+               .sessionManagement(session ->
+                       session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+               )
+               .authorizeHttpRequests(auth -> auth
+                       .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                       .requestMatchers(
+                               "/api/auth/login",
+                               "/api/auth/register",
+                               "/api/auth/refresh",
+                               "/api/auth/validate",
+                               "/api/auth/user/**"
+                       ).permitAll()
+                       .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
+                       .requestMatchers("/api/audit/**").authenticated()
+                       .anyRequest().authenticated()
+               )
+               .authenticationProvider(authenticationProvider())
+               .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+       return http.build();
+   }
 */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

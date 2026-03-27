@@ -1,10 +1,10 @@
-package com.university.backend.services;
+package com.university.backend.ressource.services;
 
-import com.university.backend.dto.ClassroomDTO;
-import com.university.backend.entities.Classroom;
-import com.university.backend.enums.ClassroomType;
-import com.university.backend.enums.ResourceStatus;
-import com.university.backend.repositories.ClassroomRepository;
+import com.university.backend.ressource.dto.ClassroomDTO;
+import com.university.backend.ressource.entities.Classroom;
+import com.university.backend.ressource.enums.ClassroomType;
+import com.university.backend.ressource.enums.ResourceStatus;
+import com.university.backend.ressource.repositories.ClassroomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;

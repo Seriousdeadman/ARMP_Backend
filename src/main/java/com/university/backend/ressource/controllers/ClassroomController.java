@@ -1,10 +1,10 @@
-package com.university.backend.controllers;
+package com.university.backend.ressource.controllers;
 
-import com.university.backend.dto.ClassroomDTO;
-import com.university.backend.entities.Classroom;
-import com.university.backend.enums.ClassroomType;
-import com.university.backend.enums.ResourceStatus;
-import com.university.backend.services.ClassroomService;
+import com.university.backend.ressource.dto.ClassroomDTO;
+import com.university.backend.ressource.entities.Classroom;
+import com.university.backend.ressource.enums.ClassroomType;
+import com.university.backend.ressource.enums.ResourceStatus;
+import com.university.backend.ressource.services.ClassroomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,10 +1,10 @@
-package com.university.backend.controllers;
+package com.university.backend.ressource.controllers;
 
-import com.university.backend.dto.EquipmentDTO;
-import com.university.backend.entities.Equipment;
-import com.university.backend.enums.EquipmentType;
-import com.university.backend.enums.ResourceStatus;
-import com.university.backend.services.EquipmentService;
+import com.university.backend.ressource.dto.EquipmentDTO;
+import com.university.backend.ressource.entities.Equipment;
+import com.university.backend.ressource.enums.EquipmentType;
+import com.university.backend.ressource.enums.ResourceStatus;
+import com.university.backend.ressource.services.EquipmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

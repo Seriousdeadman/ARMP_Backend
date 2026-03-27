@@ -1,8 +1,8 @@
-package com.university.backend.repositories;
+package com.university.backend.ressource.repositories;
 
-import com.university.backend.entities.Equipment;
-import com.university.backend.enums.EquipmentType;
-import com.university.backend.enums.ResourceStatus;
+import com.university.backend.ressource.entities.Equipment;
+import com.university.backend.ressource.enums.EquipmentType;
+import com.university.backend.ressource.enums.ResourceStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.List;

@@ -1,10 +1,10 @@
-package com.university.backend.services;
+package com.university.backend.ressource.services;
 
-import com.university.backend.dto.EquipmentDTO;
-import com.university.backend.entities.Equipment;
-import com.university.backend.enums.EquipmentType;
-import com.university.backend.enums.ResourceStatus;
-import com.university.backend.repositories.EquipmentRepository;
+import com.university.backend.ressource.dto.EquipmentDTO;
+import com.university.backend.ressource.entities.Equipment;
+import com.university.backend.ressource.enums.EquipmentType;
+import com.university.backend.ressource.enums.ResourceStatus;
+import com.university.backend.ressource.repositories.EquipmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;

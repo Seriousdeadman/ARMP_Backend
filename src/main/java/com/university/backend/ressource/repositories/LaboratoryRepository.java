@@ -1,8 +1,8 @@
-package com.university.backend.repositories;
+package com.university.backend.ressource.repositories;
 
-import com.university.backend.entities.Laboratory;
-import com.university.backend.enums.LabType;
-import com.university.backend.enums.ResourceStatus;
+import com.university.backend.ressource.entities.Laboratory;
+import com.university.backend.ressource.enums.LabType;
+import com.university.backend.ressource.enums.ResourceStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.List;

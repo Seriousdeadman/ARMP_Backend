@@ -1,10 +1,10 @@
-package com.university.backend.services;
+package com.university.backend.ressource.services;
 
-import com.university.backend.dto.CollaborativeSpaceDTO;
-import com.university.backend.entities.CollaborativeSpace;
-import com.university.backend.enums.ResourceStatus;
-import com.university.backend.enums.SpaceType;
-import com.university.backend.repositories.CollaborativeSpaceRepository;
+import com.university.backend.ressource.dto.CollaborativeSpaceDTO;
+import com.university.backend.ressource.entities.CollaborativeSpace;
+import com.university.backend.ressource.enums.ResourceStatus;
+import com.university.backend.ressource.enums.SpaceType;
+import com.university.backend.ressource.repositories.CollaborativeSpaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;

@@ -1,7 +1,7 @@
-package com.university.backend.dto;
+package com.university.backend.ressource.dto;
 
-import com.university.backend.enums.ClassroomType;
-import com.university.backend.enums.ResourceStatus;
+import com.university.backend.ressource.enums.ClassroomType;
+import com.university.backend.ressource.enums.ResourceStatus;
 import lombok.*;
 
 @Data

@@ -1,4 +1,4 @@
-package com.university.backend.enums;
+package com.university.backend.ressource.enums;
 
 public enum ResourceStatus {
     AVAILABLE,

@@ -1,7 +1,7 @@
-package com.university.backend.entities;
+package com.university.backend.ressource.entities;
 
-import com.university.backend.enums.ClassroomType;
-import com.university.backend.enums.ResourceStatus;
+import com.university.backend.ressource.enums.LabType;
+import com.university.backend.ressource.enums.ResourceStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -9,12 +9,12 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "classroom")
+@Table(name = "laboratory")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Classroom {
+public class Laboratory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,8 +33,8 @@ public class Classroom {
     private String roomNumber;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "classroom_type", nullable = false)
-    private ClassroomType classroomType;
+    @Column(name = "lab_type", nullable = false)
+    private LabType labType;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

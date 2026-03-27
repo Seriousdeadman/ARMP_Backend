@@ -1,7 +1,7 @@
-package com.university.backend.entities;
+package com.university.backend.ressource.entities;
 
-import com.university.backend.enums.ResourceStatus;
-import com.university.backend.enums.SpaceType;
+import com.university.backend.ressource.enums.EquipmentType;
+import com.university.backend.ressource.enums.ResourceStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -9,12 +9,12 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "collaborative_space")
+@Table(name = "equipment")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CollaborativeSpace {
+public class Equipment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,17 +24,14 @@ public class CollaborativeSpace {
     private String name;
 
     @Column(nullable = false)
-    private Integer capacity;
+    private String brand;
 
     @Column(nullable = false)
-    private String building;
-
-    @Column(name = "room_number", nullable = false)
-    private String roomNumber;
+    private String model;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "space_type", nullable = false)
-    private SpaceType spaceType;
+    @Column(name = "equipment_type", nullable = false)
+    private EquipmentType equipmentType;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

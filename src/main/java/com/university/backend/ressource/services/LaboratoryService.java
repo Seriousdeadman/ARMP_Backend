@@ -1,10 +1,10 @@
-package com.university.backend.services;
+package com.university.backend.ressource.services;
 
-import com.university.backend.dto.LaboratoryDTO;
-import com.university.backend.entities.Laboratory;
-import com.university.backend.enums.LabType;
-import com.university.backend.enums.ResourceStatus;
-import com.university.backend.repositories.LaboratoryRepository;
+import com.university.backend.ressource.dto.LaboratoryDTO;
+import com.university.backend.ressource.entities.Laboratory;
+import com.university.backend.ressource.enums.LabType;
+import com.university.backend.ressource.enums.ResourceStatus;
+import com.university.backend.ressource.repositories.LaboratoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;

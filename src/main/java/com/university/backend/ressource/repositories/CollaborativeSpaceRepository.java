@@ -1,8 +1,8 @@
-package com.university.backend.repositories;
+package com.university.backend.ressource.repositories;
 
-import com.university.backend.entities.CollaborativeSpace;
-import com.university.backend.enums.ResourceStatus;
-import com.university.backend.enums.SpaceType;
+import com.university.backend.ressource.entities.CollaborativeSpace;
+import com.university.backend.ressource.enums.ResourceStatus;
+import com.university.backend.ressource.enums.SpaceType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.List;

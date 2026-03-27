@@ -1,10 +1,10 @@
-package com.university.backend.controllers;
+package com.university.backend.ressource.controllers;
 
-import com.university.backend.dto.LaboratoryDTO;
-import com.university.backend.entities.Laboratory;
-import com.university.backend.enums.LabType;
-import com.university.backend.enums.ResourceStatus;
-import com.university.backend.services.LaboratoryService;
+import com.university.backend.ressource.dto.LaboratoryDTO;
+import com.university.backend.ressource.entities.Laboratory;
+import com.university.backend.ressource.enums.LabType;
+import com.university.backend.ressource.enums.ResourceStatus;
+import com.university.backend.ressource.services.LaboratoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
