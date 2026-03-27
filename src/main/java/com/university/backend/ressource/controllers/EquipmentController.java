@@ -8,6 +8,7 @@ import com.university.backend.ressource.services.EquipmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -19,6 +20,7 @@ public class EquipmentController {
 
     private final EquipmentService equipmentService;
 
+    // Anyone authenticated can view
     @GetMapping
     public ResponseEntity<List<Equipment>> getAll() {
         return ResponseEntity.ok(equipmentService.getAll());
@@ -27,22 +29,6 @@ public class EquipmentController {
     @GetMapping("/{id}")
     public ResponseEntity<Equipment> getById(@PathVariable Long id) {
         return ResponseEntity.ok(equipmentService.getById(id));
-    }
-
-    @PostMapping
-    public ResponseEntity<Equipment> create(@RequestBody EquipmentDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(equipmentService.create(dto));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Equipment> update(@PathVariable Long id, @RequestBody EquipmentDTO dto) {
-        return ResponseEntity.ok(equipmentService.update(id, dto));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        equipmentService.delete(id);
-        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/status/{status}")
@@ -58,5 +44,25 @@ public class EquipmentController {
     @GetMapping("/brand/{brand}")
     public ResponseEntity<List<Equipment>> getByBrand(@PathVariable String brand) {
         return ResponseEntity.ok(equipmentService.getByBrand(brand));
+    }
+
+    // Only LOGISTICS_STAFF and SUPER_ADMIN can create, update, delete
+    @PreAuthorize("hasAnyRole('LOGISTICS_STAFF', 'SUPER_ADMIN')")
+    @PostMapping
+    public ResponseEntity<Equipment> create(@RequestBody EquipmentDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(equipmentService.create(dto));
+    }
+
+    @PreAuthorize("hasAnyRole('LOGISTICS_STAFF', 'SUPER_ADMIN')")
+    @PutMapping("/{id}")
+    public ResponseEntity<Equipment> update(@PathVariable Long id, @RequestBody EquipmentDTO dto) {
+        return ResponseEntity.ok(equipmentService.update(id, dto));
+    }
+
+    @PreAuthorize("hasAnyRole('LOGISTICS_STAFF', 'SUPER_ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        equipmentService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

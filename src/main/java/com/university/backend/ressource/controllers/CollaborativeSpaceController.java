@@ -8,6 +8,7 @@ import com.university.backend.ressource.services.CollaborativeSpaceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -19,6 +20,7 @@ public class CollaborativeSpaceController {
 
     private final CollaborativeSpaceService collaborativeSpaceService;
 
+    // Anyone authenticated can view
     @GetMapping
     public ResponseEntity<List<CollaborativeSpace>> getAll() {
         return ResponseEntity.ok(collaborativeSpaceService.getAll());
@@ -27,22 +29,6 @@ public class CollaborativeSpaceController {
     @GetMapping("/{id}")
     public ResponseEntity<CollaborativeSpace> getById(@PathVariable Long id) {
         return ResponseEntity.ok(collaborativeSpaceService.getById(id));
-    }
-
-    @PostMapping
-    public ResponseEntity<CollaborativeSpace> create(@RequestBody CollaborativeSpaceDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(collaborativeSpaceService.create(dto));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<CollaborativeSpace> update(@PathVariable Long id, @RequestBody CollaborativeSpaceDTO dto) {
-        return ResponseEntity.ok(collaborativeSpaceService.update(id, dto));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        collaborativeSpaceService.delete(id);
-        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/status/{status}")
@@ -63,5 +49,25 @@ public class CollaborativeSpaceController {
     @GetMapping("/capacity/{min}")
     public ResponseEntity<List<CollaborativeSpace>> getByMinCapacity(@PathVariable Integer min) {
         return ResponseEntity.ok(collaborativeSpaceService.getByMinCapacity(min));
+    }
+
+    // Only LOGISTICS_STAFF and SUPER_ADMIN can create, update, delete
+    @PreAuthorize("hasAnyRole('LOGISTICS_STAFF', 'SUPER_ADMIN')")
+    @PostMapping
+    public ResponseEntity<CollaborativeSpace> create(@RequestBody CollaborativeSpaceDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(collaborativeSpaceService.create(dto));
+    }
+
+    @PreAuthorize("hasAnyRole('LOGISTICS_STAFF', 'SUPER_ADMIN')")
+    @PutMapping("/{id}")
+    public ResponseEntity<CollaborativeSpace> update(@PathVariable Long id, @RequestBody CollaborativeSpaceDTO dto) {
+        return ResponseEntity.ok(collaborativeSpaceService.update(id, dto));
+    }
+
+    @PreAuthorize("hasAnyRole('LOGISTICS_STAFF', 'SUPER_ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        collaborativeSpaceService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

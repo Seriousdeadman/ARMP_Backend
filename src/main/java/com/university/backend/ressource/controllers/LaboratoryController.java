@@ -8,6 +8,7 @@ import com.university.backend.ressource.services.LaboratoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -19,6 +20,7 @@ public class LaboratoryController {
 
     private final LaboratoryService laboratoryService;
 
+    // Anyone authenticated can view
     @GetMapping
     public ResponseEntity<List<Laboratory>> getAll() {
         return ResponseEntity.ok(laboratoryService.getAll());
@@ -27,22 +29,6 @@ public class LaboratoryController {
     @GetMapping("/{id}")
     public ResponseEntity<Laboratory> getById(@PathVariable Long id) {
         return ResponseEntity.ok(laboratoryService.getById(id));
-    }
-
-    @PostMapping
-    public ResponseEntity<Laboratory> create(@RequestBody LaboratoryDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(laboratoryService.create(dto));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Laboratory> update(@PathVariable Long id, @RequestBody LaboratoryDTO dto) {
-        return ResponseEntity.ok(laboratoryService.update(id, dto));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        laboratoryService.delete(id);
-        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/status/{status}")
@@ -63,5 +49,25 @@ public class LaboratoryController {
     @GetMapping("/capacity/{min}")
     public ResponseEntity<List<Laboratory>> getByMinCapacity(@PathVariable Integer min) {
         return ResponseEntity.ok(laboratoryService.getByMinCapacity(min));
+    }
+
+    // Only LOGISTICS_STAFF and SUPER_ADMIN can create, update, delete
+    @PreAuthorize("hasAnyRole('LOGISTICS_STAFF', 'SUPER_ADMIN')")
+    @PostMapping
+    public ResponseEntity<Laboratory> create(@RequestBody LaboratoryDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(laboratoryService.create(dto));
+    }
+
+    @PreAuthorize("hasAnyRole('LOGISTICS_STAFF', 'SUPER_ADMIN')")
+    @PutMapping("/{id}")
+    public ResponseEntity<Laboratory> update(@PathVariable Long id, @RequestBody LaboratoryDTO dto) {
+        return ResponseEntity.ok(laboratoryService.update(id, dto));
+    }
+
+    @PreAuthorize("hasAnyRole('LOGISTICS_STAFF', 'SUPER_ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        laboratoryService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -49,33 +49,45 @@ public class SecurityConfig {
    }
 
      */
- /*  @Bean
-   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-       http
-               .csrf(AbstractHttpConfigurer::disable)
-               .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-               .sessionManagement(session ->
-                       session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-               )
-               .authorizeHttpRequests(auth -> auth
-                       .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                       .requestMatchers(
-                               "/api/auth/login",
-                               "/api/auth/register",
-                               "/api/auth/refresh",
-                               "/api/auth/validate",
-                               "/api/auth/user/**"
-                       ).permitAll()
-                       .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
-                       .requestMatchers("/api/audit/**").authenticated()
-                       .anyRequest().authenticated()
-               )
-               .authenticationProvider(authenticationProvider())
-               .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(
+                                "/api/auth/login",
+                                "/api/auth/register",
+                                "/api/auth/refresh",
+                                "/api/auth/validate",
+                                "/api/auth/user/**",
+                                "/error"
+                        ).permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/classrooms/**",
+                                "/api/laboratories/**",
+                                "/api/collaborative-spaces/**",
+                                "/api/equipment/**"
+                        ).authenticated()
+                        .requestMatchers(
+                                "/api/classrooms/**",
+                                "/api/laboratories/**",
+                                "/api/collaborative-spaces/**",
+                                "/api/equipment/**"
+                        ).hasAnyRole("LOGISTICS_STAFF", "SUPER_ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
+                        .requestMatchers("/api/audit/**").authenticated()
+                        .anyRequest().authenticated()
+                )
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-       return http.build();
-   }
-*/
+        return http.build();
+    }
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
@@ -91,13 +103,14 @@ public class SecurityConfig {
         return source;
     }
 
- /*   @Bean
+    @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
-*/
+
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration config

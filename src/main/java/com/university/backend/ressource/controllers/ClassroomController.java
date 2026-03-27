@@ -8,6 +8,7 @@ import com.university.backend.ressource.services.ClassroomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -19,6 +20,7 @@ public class ClassroomController {
 
     private final ClassroomService classroomService;
 
+    // Anyone authenticated can view
     @GetMapping
     public ResponseEntity<List<Classroom>> getAll() {
         return ResponseEntity.ok(classroomService.getAll());
@@ -27,22 +29,6 @@ public class ClassroomController {
     @GetMapping("/{id}")
     public ResponseEntity<Classroom> getById(@PathVariable Long id) {
         return ResponseEntity.ok(classroomService.getById(id));
-    }
-
-    @PostMapping
-    public ResponseEntity<Classroom> create(@RequestBody ClassroomDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(classroomService.create(dto));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Classroom> update(@PathVariable Long id, @RequestBody ClassroomDTO dto) {
-        return ResponseEntity.ok(classroomService.update(id, dto));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        classroomService.delete(id);
-        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/status/{status}")
@@ -63,5 +49,25 @@ public class ClassroomController {
     @GetMapping("/capacity/{min}")
     public ResponseEntity<List<Classroom>> getByMinCapacity(@PathVariable Integer min) {
         return ResponseEntity.ok(classroomService.getByMinCapacity(min));
+    }
+
+    // Only LOGISTICS_STAFF and SUPER_ADMIN can create, update, delete
+    @PreAuthorize("hasAnyRole('LOGISTICS_STAFF', 'SUPER_ADMIN')")
+    @PostMapping
+    public ResponseEntity<Classroom> create(@RequestBody ClassroomDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(classroomService.create(dto));
+    }
+
+    @PreAuthorize("hasAnyRole('LOGISTICS_STAFF', 'SUPER_ADMIN')")
+    @PutMapping("/{id}")
+    public ResponseEntity<Classroom> update(@PathVariable Long id, @RequestBody ClassroomDTO dto) {
+        return ResponseEntity.ok(classroomService.update(id, dto));
+    }
+
+    @PreAuthorize("hasAnyRole('LOGISTICS_STAFF', 'SUPER_ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        classroomService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }
