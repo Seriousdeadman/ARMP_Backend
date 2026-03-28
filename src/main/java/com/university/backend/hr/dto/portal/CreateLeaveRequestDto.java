@@ -8,5 +8,6 @@ import java.time.LocalDate;
 public record CreateLeaveRequestDto(
         @NotNull LocalDate startDate,
         @NotNull LocalDate endDate,
-        @NotNull LeaveType type
+        @NotNull LeaveType type,
+        String reason
 ) {}

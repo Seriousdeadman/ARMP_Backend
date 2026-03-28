@@ -7,8 +7,11 @@ import com.university.backend.hr.dto.portal.ApplicantApplicationResponse;
 import com.university.backend.hr.dto.portal.ApplicantApplicationUpsertRequest;
 import com.university.backend.hr.dto.portal.ApplicationStatusResponse;
 import com.university.backend.hr.dto.portal.CreateLeaveRequestDto;
+import com.university.backend.hr.dto.portal.LeavePreviewResponse;
 import com.university.backend.hr.dto.portal.LeaveSummaryResponse;
+import com.university.backend.hr.dto.portal.PortalLeaveRequestRow;
 import com.university.backend.hr.dto.portal.SubmittedLeaveRequestResponse;
+import com.university.backend.hr.support.LeaveDaysCalculator;
 import com.university.backend.hr.entities.Candidate;
 import com.university.backend.hr.entities.Employee;
 import com.university.backend.hr.entities.Interview;
@@ -30,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
@@ -56,6 +60,33 @@ public class HrPortalService {
         }
         Candidate candidate = candidateOpt.get();
         CandidateStatus status = candidate.getStatus();
+        if (status == CandidateStatus.NEW || status == CandidateStatus.INTERVIEWING) {
+            List<Interview> planned = interviewRepository
+                    .findByCandidate_IdAndStatusOrderByInterviewDateAsc(candidate.getId(), InterviewStatus.PLANNED);
+            LocalDateTime now = LocalDateTime.now();
+            Optional<Interview> next = planned.stream()
+                    .filter(i -> i.getInterviewDate() != null && !i.getInterviewDate().isBefore(now))
+                    .min(Comparator.comparing(Interview::getInterviewDate));
+            if (next.isPresent()) {
+                Interview iv = next.get();
+                return ApplicationStatusResponse.builder()
+                        .candidateFound(true)
+                        .candidateStatus(status.name())
+                        .message("Your interview is scheduled for "
+                                + iv.getInterviewDate().format(INTERVIEW_TS)
+                                + " at " + iv.getLocation() + ".")
+                        .interviewScheduledAt(iv.getInterviewDate().format(INTERVIEW_TS))
+                        .interviewLocation(iv.getLocation())
+                        .build();
+            }
+            return ApplicationStatusResponse.builder()
+                    .candidateFound(true)
+                    .candidateStatus(status.name())
+                    .message(status == CandidateStatus.INTERVIEWING
+                            ? "You are in the interview stage."
+                            : "Your application is under review.")
+                    .build();
+        }
         if (status == CandidateStatus.ACCEPTED) {
             return ApplicationStatusResponse.builder()
                     .candidateFound(true)
@@ -68,24 +99,6 @@ public class HrPortalService {
                     .candidateFound(true)
                     .candidateStatus(status.name())
                     .message("Your application was not successful.")
-                    .build();
-        }
-        List<Interview> planned = interviewRepository
-                .findByCandidate_IdAndStatusOrderByInterviewDateAsc(candidate.getId(), InterviewStatus.PLANNED);
-        LocalDateTime now = LocalDateTime.now();
-        Optional<Interview> next = planned.stream()
-                .filter(i -> i.getInterviewDate() != null && !i.getInterviewDate().isBefore(now))
-                .min(Comparator.comparing(Interview::getInterviewDate));
-        if (next.isPresent()) {
-            Interview iv = next.get();
-            return ApplicationStatusResponse.builder()
-                    .candidateFound(true)
-                    .candidateStatus(status.name())
-                    .message("Your interview is scheduled for "
-                            + iv.getInterviewDate().format(INTERVIEW_TS)
-                            + " at " + iv.getLocation() + ".")
-                    .interviewScheduledAt(iv.getInterviewDate().format(INTERVIEW_TS))
-                    .interviewLocation(iv.getLocation())
                     .build();
         }
         return ApplicationStatusResponse.builder()
@@ -130,14 +143,14 @@ public class HrPortalService {
         Candidate candidate = candidateRepository.findByEmailIgnoreCase(user.getEmail())
                 .orElseGet(() -> Candidate.builder()
                         .email(user.getEmail())
-                        .status(CandidateStatus.PENDING)
+                        .status(CandidateStatus.NEW)
                         .build());
 
         candidate.setName(dto.name().trim());
         candidate.setPhone(dto.phone().trim());
         candidate.setDepartment(department);
         if (candidate.getStatus() == null) {
-            candidate.setStatus(CandidateStatus.PENDING);
+            candidate.setStatus(CandidateStatus.NEW);
         }
 
         Cv cv = candidate.getCv();
@@ -222,6 +235,35 @@ public class HrPortalService {
         return toCvFileMetadata(candidate);
     }
 
+    public List<PortalLeaveRequestRow> listMyLeaveRequests(User user) {
+        Employee employee = employeeRepository.findByEmailIgnoreCase(user.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "No HR employee record is linked to your account."
+                ));
+        return leaveRequestRepository.findByEmployee_IdOrderByStartDateDesc(employee.getId()).stream()
+                .map(this::toPortalLeaveRow)
+                .toList();
+    }
+
+    public LeavePreviewResponse previewLeave(User user, LocalDate startDate, LocalDate endDate) {
+        Employee employee = employeeRepository.findByEmailIgnoreCase(user.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "No HR employee record is linked to your account."
+                ));
+        if (endDate.isBefore(startDate)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End date must be on or after start date.");
+        }
+        int requestedDays = LeaveDaysCalculator.inclusiveCalendarDays(startDate, endDate);
+        int remaining = employee.getLeaveBalance() != null ? employee.getLeaveBalance() : 0;
+        return LeavePreviewResponse.builder()
+                .requestedDays(requestedDays)
+                .currentRemainingDays(remaining)
+                .remainingAfterApproval(remaining - requestedDays)
+                .build();
+    }
+
     @Transactional
     public SubmittedLeaveRequestResponse submitLeaveRequest(User user, CreateLeaveRequestDto dto) {
         Employee employee = employeeRepository.findByEmailIgnoreCase(user.getEmail())
@@ -232,12 +274,18 @@ public class HrPortalService {
         if (dto.endDate().isBefore(dto.startDate())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End date must be on or after start date.");
         }
+        int requestedDays = LeaveDaysCalculator.inclusiveCalendarDays(dto.startDate(), dto.endDate());
+        String reason = dto.reason() == null || dto.reason().isBlank()
+                ? null
+                : dto.reason().trim();
         LeaveRequest request = LeaveRequest.builder()
                 .startDate(dto.startDate())
                 .endDate(dto.endDate())
                 .type(dto.type())
                 .status(LeaveRequestStatus.PENDING)
                 .employee(employee)
+                .requestedDays(requestedDays)
+                .reason(reason)
                 .build();
         LeaveRequest saved = leaveRequestRepository.save(request);
         return new SubmittedLeaveRequestResponse(
@@ -246,6 +294,19 @@ public class HrPortalService {
                 saved.getEndDate(),
                 saved.getType().name(),
                 saved.getStatus().name()
+        );
+    }
+
+    private PortalLeaveRequestRow toPortalLeaveRow(LeaveRequest lr) {
+        return new PortalLeaveRequestRow(
+                lr.getId(),
+                lr.getStartDate(),
+                lr.getEndDate(),
+                lr.getType().name(),
+                lr.getStatus().name(),
+                lr.getRequestedDays(),
+                lr.getReason(),
+                lr.getStatusMessage()
         );
     }
 

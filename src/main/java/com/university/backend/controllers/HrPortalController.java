@@ -7,7 +7,9 @@ import com.university.backend.hr.dto.portal.ApplicantApplicationResponse;
 import com.university.backend.hr.dto.portal.ApplicantApplicationUpsertRequest;
 import com.university.backend.hr.dto.portal.ApplicationStatusResponse;
 import com.university.backend.hr.dto.portal.CreateLeaveRequestDto;
+import com.university.backend.hr.dto.portal.LeavePreviewResponse;
 import com.university.backend.hr.dto.portal.LeaveSummaryResponse;
+import com.university.backend.hr.dto.portal.PortalLeaveRequestRow;
 import com.university.backend.hr.dto.portal.SubmittedLeaveRequestResponse;
 import com.university.backend.hr.services.HrPortalService;
 import jakarta.validation.Valid;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -109,6 +112,22 @@ public class HrPortalController {
             @AuthenticationPrincipal User user
     ) {
         return ResponseEntity.ok(hrPortalService.getLeaveSummary(user));
+    }
+
+    @GetMapping("/my-leave-requests")
+    public ResponseEntity<List<PortalLeaveRequestRow>> listMyLeaveRequests(
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(hrPortalService.listMyLeaveRequests(user));
+    }
+
+    @GetMapping("/leave-preview")
+    public ResponseEntity<LeavePreviewResponse> previewLeave(
+            @AuthenticationPrincipal User user,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate
+    ) {
+        return ResponseEntity.ok(hrPortalService.previewLeave(user, startDate, endDate));
     }
 
     @PostMapping("/leave-requests")

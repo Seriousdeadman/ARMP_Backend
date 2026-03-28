@@ -40,6 +40,9 @@ public class LeaveRequest {
     @Column
     private Integer requestedDays;
 
+    @Column(length = 2048)
+    private String reason;
+
     @Column(length = 1024)
     private String statusMessage;
 

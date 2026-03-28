@@ -4,7 +4,9 @@ import com.university.backend.entities.User;
 import com.university.backend.enums.UserRole;
 import com.university.backend.hr.dto.portal.ApplicationStatusResponse;
 import com.university.backend.hr.dto.portal.CreateLeaveRequestDto;
+import com.university.backend.hr.dto.portal.LeavePreviewResponse;
 import com.university.backend.hr.dto.portal.LeaveSummaryResponse;
+import com.university.backend.hr.dto.portal.PortalLeaveRequestRow;
 import com.university.backend.hr.dto.portal.SubmittedLeaveRequestResponse;
 import com.university.backend.hr.services.HrPortalService;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,8 +20,10 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -60,7 +64,7 @@ class HrPortalControllerTest {
     void getApplicationStatus_returnsBody() throws Exception {
         ApplicationStatusResponse body = ApplicationStatusResponse.builder()
                 .candidateFound(true)
-                .candidateStatus("PENDING")
+                .candidateStatus("NEW")
                 .message("Under review")
                 .interviewScheduledAt(null)
                 .interviewLocation(null)
@@ -88,6 +92,46 @@ class HrPortalControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.employeeFound").value(true))
                 .andExpect(jsonPath("$.remainingLeaveDays").value(15));
+    }
+
+    @Test
+    void listMyLeaveRequests_returnsRows() throws Exception {
+        PortalLeaveRequestRow row = new PortalLeaveRequestRow(
+                "lr-1",
+                LocalDate.of(2025, 7, 1),
+                LocalDate.of(2025, 7, 3),
+                "ANNUAL",
+                "PENDING",
+                3,
+                "Family",
+                null
+        );
+        when(hrPortalService.listMyLeaveRequests(any(User.class))).thenReturn(List.of(row));
+
+        mockMvc.perform(get("/api/hr/portal/my-leave-requests")
+                        .with(user(testPrincipal())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("lr-1"))
+                .andExpect(jsonPath("$[0].requestedDays").value(3));
+    }
+
+    @Test
+    void previewLeave_returnsPreview() throws Exception {
+        LeavePreviewResponse body = LeavePreviewResponse.builder()
+                .requestedDays(3)
+                .currentRemainingDays(14)
+                .remainingAfterApproval(11)
+                .build();
+        when(hrPortalService.previewLeave(any(User.class), eq(LocalDate.of(2025, 7, 1)),
+                eq(LocalDate.of(2025, 7, 3)))).thenReturn(body);
+
+        mockMvc.perform(get("/api/hr/portal/leave-preview")
+                        .param("startDate", "2025-07-01")
+                        .param("endDate", "2025-07-03")
+                        .with(user(testPrincipal())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedDays").value(3))
+                .andExpect(jsonPath("$.remainingAfterApproval").value(11));
     }
 
     @Test

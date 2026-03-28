@@ -1,7 +1,8 @@
 package com.university.backend.hr.enums;
 
 public enum CandidateStatus {
-    PENDING,
+    NEW,
+    INTERVIEWING,
     ACCEPTED,
     REJECTED
 }

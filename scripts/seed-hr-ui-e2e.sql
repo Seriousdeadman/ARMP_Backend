@@ -96,7 +96,7 @@ SELECT
   'Teach Er',
   'teacher@test.com',
   '0000000003',
-  'PENDING',
+  'NEW',
   d.id
 FROM hr_departments d
 WHERE lower(d.name) = lower('Computer Science')

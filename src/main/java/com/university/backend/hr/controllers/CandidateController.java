@@ -2,6 +2,8 @@ package com.university.backend.hr.controllers;
 
 import com.university.backend.hr.dto.CandidateRequest;
 import com.university.backend.hr.dto.CandidateResponseDto;
+import com.university.backend.hr.dto.CandidateStatusPatchRequest;
+import com.university.backend.hr.dto.PromoteCandidateRequest;
 import com.university.backend.hr.dto.CvFileMetadataDto;
 import com.university.backend.hr.dto.CvRequest;
 import com.university.backend.hr.entities.Cv;
@@ -81,8 +83,21 @@ public class CandidateController {
     }
 
     @PostMapping("/{id}/promote")
-    public ResponseEntity<Employee> promoteToEmployee(@PathVariable String id) {
-        return ResponseEntity.ok(recruitmentService.promoteToEmployee(id));
+    public ResponseEntity<Employee> promoteToEmployee(
+            @PathVariable String id,
+            @RequestBody(required = false) PromoteCandidateRequest body
+    ) {
+        String gradeId = body != null ? body.getGradeId() : null;
+        return ResponseEntity.ok(recruitmentService.promoteToEmployee(id, gradeId));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<CandidateResponseDto> patchStatus(
+            @PathVariable String id,
+            @Valid @RequestBody CandidateStatusPatchRequest request
+    ) {
+        recruitmentService.updateCandidateStatus(id, request.getStatus());
+        return ResponseEntity.ok(candidateService.findById(id));
     }
 
     @PostMapping("/{candidateId}/cv-file")
