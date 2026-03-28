@@ -1,0 +1,30 @@
+package com.university.backend.hr.repositories;
+
+import com.university.backend.hr.entities.Employee;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface EmployeeRepository extends JpaRepository<Employee, String> {
+
+    @Override
+    @EntityGraph(attributePaths = {"grade", "department"})
+    List<Employee> findAll();
+
+    @EntityGraph(attributePaths = {"grade", "department"})
+    List<Employee> findByDepartmentId(String departmentId);
+
+    @Override
+    @EntityGraph(attributePaths = {"grade", "department"})
+    Optional<Employee> findById(String id);
+
+    Optional<Employee> findByEmail(String email);
+
+    Optional<Employee> findByEmailIgnoreCase(String email);
+
+    boolean existsBySourceCandidate_Id(String candidateId);
+}

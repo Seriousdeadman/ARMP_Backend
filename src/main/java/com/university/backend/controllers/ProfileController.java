@@ -1,6 +1,7 @@
 package com.university.backend.controllers;
 
 import com.university.backend.dto.SessionDTO;
+import com.university.backend.dto.UserStatisticsDTO;
 import com.university.backend.entities.Session;
 import com.university.backend.entities.UserStatistics;
 import com.university.backend.repositories.SessionRepository;
@@ -26,6 +27,17 @@ public class ProfileController {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @GetMapping("/stats")
+    public ResponseEntity<UserStatisticsDTO> getMyStatistics(
+            @AuthenticationPrincipal User user
+    ) {
+        UserStatisticsDTO dto = userStatisticsRepository
+                .findByUserId(user.getId())
+                .map(this::toStatisticsDTO)
+                .orElseGet(() -> emptyStatisticsDTO(user.getId()));
+        return ResponseEntity.ok(dto);
+    }
 
     @GetMapping("/sessions/active")
     public ResponseEntity<List<SessionDTO>> getMyActiveSessions(
@@ -91,6 +103,36 @@ public class ProfileController {
                 });
 
         return ResponseEntity.noContent().build();
+    }
+
+    private UserStatisticsDTO toStatisticsDTO(UserStatistics entity) {
+        return UserStatisticsDTO.builder()
+                .id(entity.getId())
+                .userId(entity.getUser().getId())
+                .totalLoginCount(entity.getTotalLoginCount())
+                .totalHoursConnected(entity.getTotalHoursConnected())
+                .averageSessionDuration(entity.getAverageSessionDuration())
+                .totalDevicesUsed(entity.getTotalDevicesUsed())
+                .mostUsedDevice(entity.getMostUsedDevice())
+                .mostVisitedPage(entity.getMostVisitedPage())
+                .peakUsageHour(entity.getPeakUsageHour())
+                .lastUpdated(entity.getLastUpdated())
+                .build();
+    }
+
+    private UserStatisticsDTO emptyStatisticsDTO(String userId) {
+        return UserStatisticsDTO.builder()
+                .id(null)
+                .userId(userId)
+                .totalLoginCount(0)
+                .totalHoursConnected(0.0)
+                .averageSessionDuration(0.0)
+                .totalDevicesUsed(0)
+                .mostUsedDevice(null)
+                .mostVisitedPage(null)
+                .peakUsageHour(null)
+                .lastUpdated(null)
+                .build();
     }
 
     private SessionDTO toSessionDTO(Session session) {
