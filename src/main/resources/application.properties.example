@@ -1,3 +1,5 @@
+# Copy to application.properties and set your local secrets (application.properties is gitignored).
+
 # ==========================================
 # SERVER
 # ==========================================
@@ -8,7 +10,7 @@ server.port=8080
 # ==========================================
 spring.datasource.url=jdbc:postgresql://localhost:5432/university_portal
 spring.datasource.username=postgres
-spring.datasource.password=19112002
+spring.datasource.password=CHANGEME
 
 spring.datasource.driver-class-name=org.postgresql.Driver
 
@@ -23,7 +25,7 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 # ==========================================
 # JWT
 # ==========================================
-jwt.secret=university_portal_secret_key_must_be_at_least_256_bits_long_for_hs256
+jwt.secret=REPLACE_WITH_AT_LEAST_256_BIT_SECRET_STRING_FOR_HS256_SIGNING
 jwt.expiration.access=900000
 jwt.expiration.refresh=604800000
 
