@@ -61,11 +61,15 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Broad patterns for dev: any port on localhost / 127.0.0.1 (Angular CLI host/port variants).
+        // Dev: localhost / loopback (http + https), LAN 192.168.x.x - any port (Angular CLI, mobile on same Wi-Fi).
         config.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
+                "https://localhost:*",
                 "http://127.0.0.1:*",
-                "http://[::1]:*"
+                "https://127.0.0.1:*",
+                "http://[::1]:*",
+                "https://[::1]:*",
+                "http://192.168.*:*"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
