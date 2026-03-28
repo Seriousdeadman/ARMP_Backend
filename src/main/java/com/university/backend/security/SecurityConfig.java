@@ -43,13 +43,11 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(
-                                "/api/auth/login",
-                                "/api/auth/register",
-                                "/api/auth/refresh",
-                                "/api/auth/validate",
-                                "/api/auth/user/**"
-                        ).permitAll()
+                        // Browser GET / has no JWT; without this, opening localhost:8080 shows 403 (not "server down").
+                        .requestMatchers(HttpMethod.GET, "/", "/error").permitAll()
+                        // Logout must stay authenticated; everything else under /api/auth is public (login, refresh, …).
+                        .requestMatchers("/api/auth/logout").authenticated()
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/api/audit/**").authenticated()
                         .anyRequest().authenticated()
@@ -63,9 +61,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
-                "http://localhost:4200",
-                "http://127.0.0.1:4200"
+        // Broad patterns for dev: any port on localhost / 127.0.0.1 (Angular CLI host/port variants).
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                "http://[::1]:*"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));

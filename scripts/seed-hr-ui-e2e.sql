@@ -128,7 +128,7 @@ WHERE lower(d.name) = lower('HR Ops')
 
 INSERT INTO hr_cvs (id, skills_and_experience, candidate_id)
 SELECT
-  'cv000001-0000-4000-8000-000000000001',
+  'f0000001-0000-4000-8000-000000000001',
   '5 years teaching Java and Spring Boot. Experience with curriculum design.',
   c.id
 FROM hr_candidates c
@@ -137,7 +137,7 @@ WHERE lower(c.email) = lower('teacher@test.com')
 
 INSERT INTO hr_cvs (id, skills_and_experience, candidate_id)
 SELECT
-  'cv000002-0000-4000-8000-000000000002',
+  'f0000002-0000-4000-8000-000000000002',
   'Operations specialist with HR process automation and analytics background.',
   c.id
 FROM hr_candidates c

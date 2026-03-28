@@ -31,6 +31,7 @@ import com.university.backend.hr.repositories.GradeRepository;
 import com.university.backend.hr.repositories.InterviewRepository;
 import com.university.backend.hr.repositories.LeaveRequestRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,13 +61,17 @@ public class HrPortalService {
     private final LeaveRequestRepository leaveRequestRepository;
     private final CvFileStorageService cvFileStorageService;
 
+    @Transactional(readOnly = true)
     public ApplicationStatusResponse getApplicationStatus(User user) {
-        Optional<Candidate> candidateOpt = candidateRepository.findByEmailIgnoreCase(user.getEmail());
+        Optional<Candidate> candidateOpt = findPortalCandidateByEmail(user.getEmail());
         if (candidateOpt.isEmpty()) {
             return ApplicationStatusResponse.notLinked();
         }
         Candidate candidate = candidateOpt.get();
         CandidateStatus status = candidate.getStatus();
+        if (status == null) {
+            status = CandidateStatus.NEW;
+        }
         if (status == CandidateStatus.NEW || status == CandidateStatus.INTERVIEWING) {
             List<Interview> planned = interviewRepository
                     .findByCandidate_IdAndStatusOrderByInterviewDateAsc(candidate.getId(), InterviewStatus.PLANNED);
@@ -138,8 +143,9 @@ public class HrPortalService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
     public ApplicantApplicationResponse getMyApplication(User user) {
-        return candidateRepository.findByEmailIgnoreCase(user.getEmail())
+        return findPortalCandidateByEmail(user.getEmail())
                 .map(this::toApplicantApplicationResponse)
                 .orElse(null);
     }
@@ -148,7 +154,7 @@ public class HrPortalService {
     public ApplicantApplicationResponse saveMyApplication(User user, ApplicantApplicationUpsertRequest dto) {
         Department department = departmentRepository.findById(dto.departmentId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Department not found"));
-        Candidate candidate = candidateRepository.findByEmailIgnoreCase(user.getEmail())
+        Candidate candidate = findPortalCandidateByEmail(user.getEmail())
                 .orElseGet(() -> Candidate.builder()
                         .email(user.getEmail())
                         .status(CandidateStatus.NEW)
@@ -178,7 +184,7 @@ public class HrPortalService {
 
     @Transactional
     public CvFileMetadataDto uploadMyCvFile(User user, MultipartFile file) {
-        Candidate candidate = candidateRepository.findByEmailIgnoreCase(user.getEmail())
+        Candidate candidate = findPortalCandidateByEmail(user.getEmail())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Submit your application first."));
         Cv cv = candidate.getCv();
         if (cv == null) {
@@ -201,8 +207,9 @@ public class HrPortalService {
         return toCvFileMetadata(saved);
     }
 
+    @Transactional(readOnly = true)
     public byte[] readMyCvFile(User user) {
-        Candidate candidate = candidateRepository.findByEmailIgnoreCase(user.getEmail())
+        Candidate candidate = findPortalCandidateByEmail(user.getEmail())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Application not found."));
         Cv cv = candidate.getCv();
         if (cv == null || cv.getFileStoragePath() == null || cv.getFileStoragePath().isBlank()) {
@@ -213,7 +220,7 @@ public class HrPortalService {
 
     @Transactional
     public CvFileMetadataDto deleteMyCvFile(User user) {
-        Candidate candidate = candidateRepository.findByEmailIgnoreCase(user.getEmail())
+        Candidate candidate = findPortalCandidateByEmail(user.getEmail())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Application not found."));
         Cv cv = candidate.getCv();
         if (cv == null || cv.getFileStoragePath() == null || cv.getFileStoragePath().isBlank()) {
@@ -229,8 +236,9 @@ public class HrPortalService {
         return toCvFileMetadata(saved);
     }
 
+    @Transactional(readOnly = true)
     public CvFileMetadataDto getMyCvMetadata(User user) {
-        Candidate candidate = candidateRepository.findByEmailIgnoreCase(user.getEmail()).orElse(null);
+        Candidate candidate = findPortalCandidateByEmail(user.getEmail()).orElse(null);
         if (candidate == null || candidate.getCv() == null) {
             return CvFileMetadataDto.builder()
                     .candidateId(candidate != null ? candidate.getId() : null)
@@ -338,6 +346,14 @@ public class HrPortalService {
                 ));
     }
 
+    private Optional<Candidate> findPortalCandidateByEmail(String email) {
+        List<String> ids = candidateRepository.findCandidateIdsByEmailIgnoreCase(email, PageRequest.of(0, 1));
+        if (ids.isEmpty()) {
+            return Optional.empty();
+        }
+        return candidateRepository.findPortalById(ids.get(0));
+    }
+
     private PortalLeaveRequestRow toPortalLeaveRow(LeaveRequest lr) {
         return new PortalLeaveRequestRow(
                 lr.getId(),
@@ -352,18 +368,22 @@ public class HrPortalService {
     }
 
     private ApplicantApplicationResponse toApplicantApplicationResponse(Candidate candidate) {
-        String skills = candidate.getCv() != null ? candidate.getCv().getSkillsAndExperience() : "";
-        boolean hasFile = candidate.getCv() != null
-                && candidate.getCv().getFileStoragePath() != null
-                && !candidate.getCv().getFileStoragePath().isBlank();
+        Cv cv = candidate.getCv();
+        String skills = cv != null && cv.getSkillsAndExperience() != null ? cv.getSkillsAndExperience() : "";
+        boolean hasFile = cv != null
+                && cv.getFileStoragePath() != null
+                && !cv.getFileStoragePath().isBlank();
+        Department dept = candidate.getDepartment();
+        String deptId = dept != null ? dept.getId() : null;
+        String deptName = dept != null ? dept.getName() : null;
         return ApplicantApplicationResponse.builder()
                 .candidateId(candidate.getId())
                 .name(candidate.getName())
                 .email(candidate.getEmail())
                 .phone(candidate.getPhone())
                 .status(candidate.getStatus())
-                .departmentId(candidate.getDepartment().getId())
-                .departmentName(candidate.getDepartment().getName())
+                .departmentId(deptId)
+                .departmentName(deptName)
                 .skillsAndExperience(skills)
                 .hasCvFile(hasFile)
                 .build();
