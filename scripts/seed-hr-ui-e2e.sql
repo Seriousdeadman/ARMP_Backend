@@ -230,6 +230,22 @@ WHERE g.name = 'MAITRE'
   AND lower(d.name) = lower('HR Ops')
   AND NOT EXISTS (SELECT 1 FROM hr_employees e WHERE lower(e.email) = lower('super.admin@test.com'));
 
+INSERT INTO hr_employees (id, name, email, hire_date, leave_balance, grade_id, department_id, source_candidate_id)
+SELECT
+  'e0000003-0000-4000-8000-000000000003',
+  'Teach Er',
+  'teacher@test.com',
+  CURRENT_DATE - 90,
+  21,
+  g.id,
+  d.id,
+  NULL
+FROM hr_grades g
+CROSS JOIN hr_departments d
+WHERE g.name = 'ASSISTANT'
+  AND lower(d.name) = lower('Computer Science')
+  AND NOT EXISTS (SELECT 1 FROM hr_employees e WHERE lower(e.email) = lower('teacher@test.com'));
+
 -- ---------------------------------------------------------------------------
 -- 5) Leave requests for admin actions + status display
 -- ---------------------------------------------------------------------------
@@ -315,7 +331,11 @@ SELECT 'candidates', count(*) FROM hr_candidates WHERE lower(email) IN (
   lower('rejected.candidate@test.com')
 )
 UNION ALL
-SELECT 'employees', count(*) FROM hr_employees WHERE lower(email) IN (lower('hr.staff@test.com'), lower('super.admin@test.com'))
+SELECT 'employees', count(*) FROM hr_employees WHERE lower(email) IN (
+  lower('hr.staff@test.com'),
+  lower('super.admin@test.com'),
+  lower('teacher@test.com')
+)
 UNION ALL
 SELECT 'leave_requests', count(*) FROM hr_leave_requests WHERE id IN (
   'l0000001-0000-4000-8000-000000000001',

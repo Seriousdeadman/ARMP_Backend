@@ -1,6 +1,7 @@
 package com.university.backend.hr.services;
 
 import com.university.backend.entities.User;
+import com.university.backend.enums.UserRole;
 import com.university.backend.hr.dto.CvFileMetadataDto;
 import com.university.backend.hr.dto.DepartmentSummaryDto;
 import com.university.backend.hr.dto.portal.ApplicantApplicationResponse;
@@ -18,12 +19,15 @@ import com.university.backend.hr.entities.Interview;
 import com.university.backend.hr.entities.LeaveRequest;
 import com.university.backend.hr.entities.Cv;
 import com.university.backend.hr.entities.Department;
+import com.university.backend.hr.entities.Grade;
 import com.university.backend.hr.enums.CandidateStatus;
+import com.university.backend.hr.enums.GradeName;
 import com.university.backend.hr.enums.InterviewStatus;
 import com.university.backend.hr.enums.LeaveRequestStatus;
 import com.university.backend.hr.repositories.CandidateRepository;
 import com.university.backend.hr.repositories.DepartmentRepository;
 import com.university.backend.hr.repositories.EmployeeRepository;
+import com.university.backend.hr.repositories.GradeRepository;
 import com.university.backend.hr.repositories.InterviewRepository;
 import com.university.backend.hr.repositories.LeaveRequestRepository;
 import lombok.RequiredArgsConstructor;
@@ -46,9 +50,12 @@ public class HrPortalService {
 
     private static final DateTimeFormatter INTERVIEW_TS = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
+    private static final int AUTO_PROVISION_LEAVE_BALANCE = 21;
+
     private final CandidateRepository candidateRepository;
     private final DepartmentRepository departmentRepository;
     private final EmployeeRepository employeeRepository;
+    private final GradeRepository gradeRepository;
     private final InterviewRepository interviewRepository;
     private final LeaveRequestRepository leaveRequestRepository;
     private final CvFileStorageService cvFileStorageService;
@@ -117,8 +124,9 @@ public class HrPortalService {
                 .toList();
     }
 
+    @Transactional
     public LeaveSummaryResponse getLeaveSummary(User user) {
-        Optional<Employee> employeeOpt = employeeRepository.findByEmailIgnoreCase(user.getEmail());
+        Optional<Employee> employeeOpt = findEmployeeOrAutoProvisionStaff(user);
         if (employeeOpt.isEmpty()) {
             return LeaveSummaryResponse.notLinked();
         }
@@ -235,23 +243,17 @@ public class HrPortalService {
         return toCvFileMetadata(candidate);
     }
 
+    @Transactional
     public List<PortalLeaveRequestRow> listMyLeaveRequests(User user) {
-        Employee employee = employeeRepository.findByEmailIgnoreCase(user.getEmail())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "No HR employee record is linked to your account."
-                ));
+        Employee employee = requireEmployeeForLeavePortal(user);
         return leaveRequestRepository.findByEmployee_IdOrderByStartDateDesc(employee.getId()).stream()
                 .map(this::toPortalLeaveRow)
                 .toList();
     }
 
+    @Transactional
     public LeavePreviewResponse previewLeave(User user, LocalDate startDate, LocalDate endDate) {
-        Employee employee = employeeRepository.findByEmailIgnoreCase(user.getEmail())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "No HR employee record is linked to your account."
-                ));
+        Employee employee = requireEmployeeForLeavePortal(user);
         if (endDate.isBefore(startDate)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End date must be on or after start date.");
         }
@@ -266,11 +268,7 @@ public class HrPortalService {
 
     @Transactional
     public SubmittedLeaveRequestResponse submitLeaveRequest(User user, CreateLeaveRequestDto dto) {
-        Employee employee = employeeRepository.findByEmailIgnoreCase(user.getEmail())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "No HR employee record is linked to your account."
-                ));
+        Employee employee = requireEmployeeForLeavePortal(user);
         if (dto.endDate().isBefore(dto.startDate())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End date must be on or after start date.");
         }
@@ -295,6 +293,49 @@ public class HrPortalService {
                 saved.getType().name(),
                 saved.getStatus().name()
         );
+    }
+
+    /**
+     * Staff roles (teacher, logistics) get a minimal {@link Employee} on first portal use when HR has not
+     * created one yet — same email as the account, ASSISTANT grade and first department in the DB.
+     */
+    private Optional<Employee> findEmployeeOrAutoProvisionStaff(User user) {
+        Optional<Employee> existing = employeeRepository.findByEmailIgnoreCase(user.getEmail());
+        if (existing.isPresent()) {
+            return existing;
+        }
+        if (user.getRole() != UserRole.TEACHER && user.getRole() != UserRole.LOGISTICS_STAFF) {
+            return Optional.empty();
+        }
+        Grade grade = gradeRepository.findByName(GradeName.ASSISTANT).orElse(null);
+        if (grade == null) {
+            return Optional.empty();
+        }
+        List<Department> departments = departmentRepository.findAll();
+        if (departments.isEmpty()) {
+            return Optional.empty();
+        }
+        String name = (user.getFirstName() + " " + user.getLastName()).trim();
+        if (name.isBlank()) {
+            name = user.getEmail();
+        }
+        Employee created = Employee.builder()
+                .name(name)
+                .email(user.getEmail())
+                .hireDate(LocalDate.now())
+                .leaveBalance(AUTO_PROVISION_LEAVE_BALANCE)
+                .grade(grade)
+                .department(departments.get(0))
+                .build();
+        return Optional.of(employeeRepository.save(created));
+    }
+
+    private Employee requireEmployeeForLeavePortal(User user) {
+        return findEmployeeOrAutoProvisionStaff(user)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "No HR employee record is linked to your account."
+                ));
     }
 
     private PortalLeaveRequestRow toPortalLeaveRow(LeaveRequest lr) {
