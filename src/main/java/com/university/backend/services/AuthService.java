@@ -148,10 +148,10 @@ public class AuthService {
         String newAccessToken = jwtService.generateAccessToken(user);
         String newRefreshToken = jwtService.generateRefreshToken(user);
 
-        stored.setIsRevoked(true);
+        stored.setToken(newRefreshToken);
+        stored.setExpiresAt(LocalDateTime.now().plusDays(7));
+        stored.setIsRevoked(false);
         refreshTokenRepository.save(stored);
-
-        saveRefreshToken(user, newRefreshToken);
 
         return buildAuthResponse(user, newAccessToken, newRefreshToken);
     }

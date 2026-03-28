@@ -24,6 +24,39 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserDetailsServiceImpl userDetailsService;
 
+    /**
+     * Do not parse Bearer for login / register / refresh — the client may still send an access JWT on
+     * refresh; parsing it would populate the security context and can break token rotation or confuse
+     * authorization for those public endpoints.
+     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = requestPath(request);
+        return path.startsWith("/api/auth/login")
+                || path.startsWith("/api/auth/register")
+                || path.startsWith("/api/auth/refresh");
+    }
+
+    /**
+     * ServletPath can be empty before dispatch in some setups; use URI minus context path.
+     */
+    private static String requestPath(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        String context = request.getContextPath();
+        if (context != null && !context.isEmpty() && uri.startsWith(context)) {
+            uri = uri.substring(context.length());
+        }
+        int q = uri.indexOf('?');
+        if (q >= 0) {
+            uri = uri.substring(0, q);
+        }
+        int semi = uri.indexOf(';');
+        if (semi >= 0) {
+            uri = uri.substring(0, semi);
+        }
+        return uri.isEmpty() ? "/" : uri;
+    }
+
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
