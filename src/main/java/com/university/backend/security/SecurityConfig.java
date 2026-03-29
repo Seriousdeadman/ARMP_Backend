@@ -32,23 +32,7 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
-    /*
-   @Bean
-   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-       http
-               .csrf(AbstractHttpConfigurer::disable)
-               .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-               .sessionManagement(session ->
-                       session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-               )
-               .authorizeHttpRequests(auth -> auth
-                       .anyRequest().permitAll()
-               );
 
-       return http.build();
-   }
-
-     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -79,6 +63,11 @@ public class SecurityConfig {
                                 "/api/collaborative-spaces/**",
                                 "/api/equipment/**"
                         ).hasAnyRole("LOGISTICS_STAFF", "SUPER_ADMIN")
+                        .requestMatchers("/api/reservations/my").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/reservations").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/reservations/*/cancel").authenticated()
+                        .requestMatchers("/api/reservations/resource/**").authenticated()
+                        .requestMatchers("/api/reservations").hasAnyRole("LOGISTICS_STAFF", "SUPER_ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/api/audit/**").authenticated()
                         .anyRequest().authenticated()
@@ -88,10 +77,11 @@ public class SecurityConfig {
 
         return http.build();
     }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedOrigins(List.of("http://localhost:4200"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization"));
