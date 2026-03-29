@@ -5,6 +5,7 @@ import com.university.backend.hr.dto.InterviewResponseDto;
 import com.university.backend.hr.dto.HrResponseMapper;
 import com.university.backend.hr.entities.Candidate;
 import com.university.backend.hr.entities.Interview;
+import com.university.backend.hr.enums.InterviewStatus;
 import com.university.backend.hr.repositories.CandidateRepository;
 import com.university.backend.hr.repositories.InterviewRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class InterviewService {
 
     private final InterviewRepository interviewRepository;
     private final CandidateRepository candidateRepository;
+    private final RecruitmentService recruitmentService;
 
     public List<InterviewResponseDto> findAll() {
         return interviewRepository.findAll().stream()
@@ -56,6 +58,9 @@ public class InterviewService {
                 .candidate(candidate)
                 .build();
         Interview savedInterview = interviewRepository.save(interview);
+        if (request.getStatus() == InterviewStatus.PLANNED) {
+            recruitmentService.syncCandidateStatusAfterPlannedInterview(candidate.getId());
+        }
         return HrResponseMapper.toInterviewResponse(findEntityById(savedInterview.getId()));
     }
 
@@ -70,6 +75,9 @@ public class InterviewService {
         interview.setStatus(request.getStatus());
         interview.setCandidate(candidate);
         Interview savedInterview = interviewRepository.save(interview);
+        if (request.getStatus() == InterviewStatus.PLANNED) {
+            recruitmentService.syncCandidateStatusAfterPlannedInterview(candidate.getId());
+        }
         return HrResponseMapper.toInterviewResponse(findEntityById(savedInterview.getId()));
     }
 

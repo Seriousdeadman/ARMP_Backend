@@ -79,7 +79,34 @@ public class RecruitmentService {
     public Candidate updateCandidateStatus(String candidateId, CandidateStatus newStatus) {
         Candidate candidate = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Candidate not found"));
+        assertValidKanbanTransition(candidate.getStatus(), newStatus);
         candidate.setStatus(newStatus);
         return candidateRepository.save(candidate);
+    }
+
+    /**
+     * Sets candidate to INTERVIEWING when HR schedules a PLANNED interview, unless already ACCEPTED
+     * (hire decision — do not move backward in the pipeline).
+     */
+    @Transactional
+    public void syncCandidateStatusAfterPlannedInterview(String candidateId) {
+        Candidate candidate = candidateRepository.findById(candidateId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Candidate not found"));
+        if (candidate.getStatus() == CandidateStatus.ACCEPTED) {
+            return;
+        }
+        candidate.setStatus(CandidateStatus.INTERVIEWING);
+        candidateRepository.save(candidate);
+    }
+
+    private static void assertValidKanbanTransition(CandidateStatus from, CandidateStatus to) {
+        if (from == to) {
+            return;
+        }
+        if (from == CandidateStatus.ACCEPTED
+                && (to == CandidateStatus.NEW || to == CandidateStatus.INTERVIEWING)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid transition from ACCEPTED to " + to);
+        }
     }
 }

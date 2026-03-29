@@ -173,4 +173,55 @@ class RecruitmentServiceTest {
         assertThat(out.getGrade().getName()).isEqualTo(GradeName.MAITRE);
         verify(gradeRepository, never()).findByName(GradeName.ASSISTANT);
     }
+
+    @Test
+    void updateCandidateStatus_rejectsAcceptedToNew() {
+        Candidate candidate = Candidate.builder()
+                .id("c1")
+                .name("A")
+                .email("a@x.com")
+                .phone("1")
+                .status(CandidateStatus.ACCEPTED)
+                .department(Department.builder().id("d1").name("CS").build())
+                .build();
+        when(candidateRepository.findById("c1")).thenReturn(Optional.of(candidate));
+
+        assertThatThrownBy(() -> recruitmentService.updateCandidateStatus("c1", CandidateStatus.NEW))
+                .isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void syncCandidateStatusAfterPlannedInterview_setsInterviewingWhenNew() {
+        Candidate candidate = Candidate.builder()
+                .id("c1")
+                .name("A")
+                .email("a@x.com")
+                .phone("1")
+                .status(CandidateStatus.NEW)
+                .department(Department.builder().id("d1").name("CS").build())
+                .build();
+        when(candidateRepository.findById("c1")).thenReturn(Optional.of(candidate));
+        when(candidateRepository.save(any(Candidate.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        recruitmentService.syncCandidateStatusAfterPlannedInterview("c1");
+
+        assertThat(candidate.getStatus()).isEqualTo(CandidateStatus.INTERVIEWING);
+    }
+
+    @Test
+    void syncCandidateStatusAfterPlannedInterview_noOpWhenAccepted() {
+        Candidate candidate = Candidate.builder()
+                .id("c1")
+                .name("A")
+                .email("a@x.com")
+                .phone("1")
+                .status(CandidateStatus.ACCEPTED)
+                .department(Department.builder().id("d1").name("CS").build())
+                .build();
+        when(candidateRepository.findById("c1")).thenReturn(Optional.of(candidate));
+
+        recruitmentService.syncCandidateStatusAfterPlannedInterview("c1");
+
+        verify(candidateRepository, never()).save(any(Candidate.class));
+    }
 }
