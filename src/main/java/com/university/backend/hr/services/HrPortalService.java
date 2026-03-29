@@ -160,8 +160,8 @@ public class HrPortalService {
                         .status(CandidateStatus.NEW)
                         .build());
 
-        candidate.setName(dto.name().trim());
-        candidate.setPhone(dto.phone().trim());
+        candidate.setName((user.getFirstName() + " " + user.getLastName()).trim());
+        candidate.setPhone(user.getPhone() != null ? user.getPhone().trim() : "");
         candidate.setDepartment(department);
         if (candidate.getStatus() == null) {
             candidate.setStatus(CandidateStatus.NEW);
@@ -185,7 +185,7 @@ public class HrPortalService {
     @Transactional
     public CvFileMetadataDto uploadMyCvFile(User user, MultipartFile file) {
         Candidate candidate = findPortalCandidateByEmail(user.getEmail())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Submit your application first."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Submit your application first."));
         Cv cv = candidate.getCv();
         if (cv == null) {
             cv = Cv.builder()
