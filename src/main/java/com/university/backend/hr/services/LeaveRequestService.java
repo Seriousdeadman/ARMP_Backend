@@ -5,6 +5,7 @@ import com.university.backend.hr.entities.Employee;
 import com.university.backend.hr.entities.LeaveRequest;
 import com.university.backend.hr.enums.LeaveRequestStatus;
 import com.university.backend.hr.exception.InsufficientLeaveBalanceException;
+import com.university.backend.entities.User;
 import com.university.backend.hr.repositories.EmployeeRepository;
 import com.university.backend.hr.repositories.LeaveRequestRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,18 @@ public class LeaveRequestService {
     public LeaveRequest findById(String id) {
         return leaveRequestRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Leave request not found"));
+    }
+
+    /**
+     * Ensures the approver is not acting on their own leave request (HR staff self-approval guard).
+     */
+    public void assertApproverNotRequester(User user, String leaveRequestId) {
+        LeaveRequest leaveRequest = findById(leaveRequestId);
+        String employeeEmail = leaveRequest.getEmployee() != null ? leaveRequest.getEmployee().getEmail() : null;
+        if (employeeEmail != null && employeeEmail.equalsIgnoreCase(user.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You cannot approve or reject your own leave request");
+        }
     }
 
     @Transactional

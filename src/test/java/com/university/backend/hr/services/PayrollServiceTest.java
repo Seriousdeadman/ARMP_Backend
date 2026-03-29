@@ -9,9 +9,9 @@ import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class SalaryCalculatorTest {
+class PayrollServiceTest {
 
-    private final SalaryCalculator salaryCalculator = new SalaryCalculator();
+    private final PayrollService payrollService = new PayrollService();
 
     @Test
     void calculateMonthlyPay_fromEmployee() {
@@ -23,7 +23,7 @@ class SalaryCalculatorTest {
         Employee employee = Employee.builder()
                 .grade(grade)
                 .build();
-        assertThat(salaryCalculator.calculateMonthlyPay(employee))
+        assertThat(payrollService.calculateMonthlyPay(employee))
                 .isEqualByComparingTo(new BigDecimal("3000.00"));
     }
 }

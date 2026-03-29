@@ -10,6 +10,7 @@ import com.university.backend.hr.dto.portal.CreateLeaveRequestDto;
 import com.university.backend.hr.dto.portal.LeavePreviewResponse;
 import com.university.backend.hr.dto.portal.LeaveSummaryResponse;
 import com.university.backend.hr.dto.portal.PortalLeaveRequestRow;
+import com.university.backend.hr.dto.portal.PortalPayrollResponse;
 import com.university.backend.hr.dto.portal.SubmittedLeaveRequestResponse;
 import com.university.backend.hr.services.HrPortalService;
 import jakarta.validation.Valid;
@@ -137,5 +138,12 @@ public class HrPortalController {
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(hrPortalService.submitLeaveRequest(user, body));
+    }
+
+    @GetMapping("/my-payroll")
+    public ResponseEntity<PortalPayrollResponse> getMyPayroll(
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(hrPortalService.getMyPayrollSummary(user));
     }
 }

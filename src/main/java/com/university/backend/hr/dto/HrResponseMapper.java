@@ -64,6 +64,10 @@ public final class HrResponseMapper {
     }
 
     public static EmployeeResponseDto toEmployeeResponse(Employee employee) {
+        return toEmployeeResponse(employee, null);
+    }
+
+    public static EmployeeResponseDto toEmployeeResponse(Employee employee, java.math.BigDecimal calculatedSalary) {
         if (employee == null) {
             return null;
         }
@@ -73,8 +77,10 @@ public final class HrResponseMapper {
                 .email(employee.getEmail())
                 .hireDate(employee.getHireDate())
                 .leaveBalance(employee.getLeaveBalance())
+                .status(employee.getStatus())
                 .grade(toGradeSummary(employee.getGrade()))
                 .department(toDepartmentSummary(employee.getDepartment()))
+                .calculatedSalary(calculatedSalary)
                 .build();
     }
 

@@ -12,11 +12,13 @@ import com.university.backend.hr.dto.portal.LeavePreviewResponse;
 import com.university.backend.hr.dto.portal.LeaveSummaryResponse;
 import com.university.backend.hr.dto.portal.PortalLeaveRequestRow;
 import com.university.backend.hr.dto.portal.SubmittedLeaveRequestResponse;
+import com.university.backend.hr.dto.portal.PortalPayrollResponse;
 import com.university.backend.hr.support.LeaveDaysCalculator;
 import com.university.backend.hr.entities.Candidate;
 import com.university.backend.hr.entities.Employee;
 import com.university.backend.hr.entities.Interview;
 import com.university.backend.hr.entities.LeaveRequest;
+import com.university.backend.hr.enums.EmployeeStatus;
 import com.university.backend.hr.entities.Cv;
 import com.university.backend.hr.entities.Department;
 import com.university.backend.hr.entities.Grade;
@@ -60,6 +62,10 @@ public class HrPortalService {
     private final InterviewRepository interviewRepository;
     private final LeaveRequestRepository leaveRequestRepository;
     private final CvFileStorageService cvFileStorageService;
+    private final PayrollService payrollService;
+
+    private static final String PENDING_EMPLOYEE_MESSAGE =
+            "Your employee profile is pending approval by a Super Admin before you can use leave and payroll.";
 
     @Transactional(readOnly = true)
     public ApplicationStatusResponse getApplicationStatus(User user) {
@@ -136,6 +142,7 @@ public class HrPortalService {
             return LeaveSummaryResponse.notLinked();
         }
         Employee employee = employeeOpt.get();
+        assertActiveForSelfService(employee);
         return LeaveSummaryResponse.builder()
                 .employeeFound(true)
                 .displayName(employee.getName())
@@ -253,7 +260,7 @@ public class HrPortalService {
 
     @Transactional
     public List<PortalLeaveRequestRow> listMyLeaveRequests(User user) {
-        Employee employee = requireEmployeeForLeavePortal(user);
+        Employee employee = requireActiveEmployeeForHrPortal(user);
         return leaveRequestRepository.findByEmployee_IdOrderByStartDateDesc(employee.getId()).stream()
                 .map(this::toPortalLeaveRow)
                 .toList();
@@ -261,7 +268,7 @@ public class HrPortalService {
 
     @Transactional
     public LeavePreviewResponse previewLeave(User user, LocalDate startDate, LocalDate endDate) {
-        Employee employee = requireEmployeeForLeavePortal(user);
+        Employee employee = requireActiveEmployeeForHrPortal(user);
         if (endDate.isBefore(startDate)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End date must be on or after start date.");
         }
@@ -276,7 +283,7 @@ public class HrPortalService {
 
     @Transactional
     public SubmittedLeaveRequestResponse submitLeaveRequest(User user, CreateLeaveRequestDto dto) {
-        Employee employee = requireEmployeeForLeavePortal(user);
+        Employee employee = requireActiveEmployeeForHrPortal(user);
         if (dto.endDate().isBefore(dto.startDate())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End date must be on or after start date.");
         }
@@ -312,7 +319,10 @@ public class HrPortalService {
         if (existing.isPresent()) {
             return existing;
         }
-        if (user.getRole() != UserRole.TEACHER && user.getRole() != UserRole.LOGISTICS_STAFF) {
+        if (user.getRole() != UserRole.TEACHER
+                && user.getRole() != UserRole.REGULAR_STAFF
+                && user.getRole() != UserRole.LOGISTICS_STAFF
+                && user.getRole() != UserRole.SUPER_ADMIN) {
             return Optional.empty();
         }
         Grade grade = gradeRepository.findByName(GradeName.ASSISTANT).orElse(null);
@@ -332,18 +342,27 @@ public class HrPortalService {
                 .email(user.getEmail())
                 .hireDate(LocalDate.now())
                 .leaveBalance(AUTO_PROVISION_LEAVE_BALANCE)
+                .status(EmployeeStatus.ACTIVE)
                 .grade(grade)
                 .department(departments.get(0))
                 .build();
         return Optional.of(employeeRepository.save(created));
     }
 
-    private Employee requireEmployeeForLeavePortal(User user) {
-        return findEmployeeOrAutoProvisionStaff(user)
+    private void assertActiveForSelfService(Employee employee) {
+        if (employee.getStatus() == EmployeeStatus.PENDING_VALIDATION) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, PENDING_EMPLOYEE_MESSAGE);
+        }
+    }
+
+    private Employee requireActiveEmployeeForHrPortal(User user) {
+        Employee employee = findEmployeeOrAutoProvisionStaff(user)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "No HR employee record is linked to your account."
                 ));
+        assertActiveForSelfService(employee);
+        return employee;
     }
 
     private Optional<Candidate> findPortalCandidateByEmail(String email) {
@@ -397,6 +416,28 @@ public class HrPortalService {
                 .contentType(cv != null ? cv.getFileContentType() : null)
                 .sizeBytes(cv != null ? cv.getFileSizeBytes() : null)
                 .filePresent(cv != null && cv.getFileStoragePath() != null && !cv.getFileStoragePath().isBlank())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public PortalPayrollResponse getMyPayrollSummary(User user) {
+        Optional<Employee> employeeOpt = findEmployeeOrAutoProvisionStaff(user);
+        if (employeeOpt.isEmpty()) {
+            return PortalPayrollResponse.notLinked();
+        }
+        Employee employee = employeeOpt.get();
+        assertActiveForSelfService(employee);
+        com.university.backend.hr.dto.PayrollResult payroll = payrollService.calculate(employee);
+        String gradeName = employee.getGrade() != null ? employee.getGrade().getName().name() : null;
+        return PortalPayrollResponse.builder()
+                .employeeFound(true)
+                .displayName(employee.getName())
+                .gradeName(gradeName)
+                .baseSalary(payroll.baseSalary())
+                .dailyRate(payroll.dailyRate())
+                .leaveBalance(payroll.leaveBalance())
+                .deduction(payroll.deduction())
+                .calculatedSalary(payroll.calculatedSalary())
                 .build();
     }
 }

@@ -1,6 +1,7 @@
 package com.university.backend.hr.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.university.backend.hr.enums.EmployeeStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -48,4 +49,9 @@ public class Employee {
     @JoinColumn(name = "source_candidate_id", unique = true)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "cv", "department", "hiredEmployee"})
     private Candidate sourceCandidate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private EmployeeStatus status = EmployeeStatus.ACTIVE;
 }

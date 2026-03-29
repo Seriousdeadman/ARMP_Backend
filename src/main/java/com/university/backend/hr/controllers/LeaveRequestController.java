@@ -1,5 +1,6 @@
 package com.university.backend.hr.controllers;
 
+import com.university.backend.entities.User;
 import com.university.backend.hr.dto.LeaveRequestRequest;
 import com.university.backend.hr.entities.LeaveRequest;
 import com.university.backend.hr.services.LeaveRequestService;
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -60,7 +62,11 @@ public class LeaveRequestController {
      */
     @Deprecated(forRemoval = false)
     @PostMapping("/{id}/process")
-    public ResponseEntity<LeaveRequest> processLeaveRequest(@PathVariable String id) {
+    public ResponseEntity<LeaveRequest> processLeaveRequest(
+            @AuthenticationPrincipal User user,
+            @PathVariable String id
+    ) {
+        leaveRequestService.assertApproverNotRequester(user, id);
         return ResponseEntity.ok(leaveRequestService.processLeaveRequest(id));
     }
 }

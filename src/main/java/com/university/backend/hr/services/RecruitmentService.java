@@ -4,6 +4,7 @@ import com.university.backend.hr.entities.Candidate;
 import com.university.backend.hr.entities.Employee;
 import com.university.backend.hr.entities.Grade;
 import com.university.backend.hr.enums.CandidateStatus;
+import com.university.backend.hr.enums.EmployeeStatus;
 import com.university.backend.hr.enums.GradeName;
 import com.university.backend.enums.UserRole;
 import com.university.backend.hr.repositories.CandidateRepository;
@@ -62,6 +63,7 @@ public class RecruitmentService {
                 .email(candidate.getEmail())
                 .hireDate(LocalDate.now())
                 .leaveBalance(DEFAULT_LEAVE_BALANCE)
+                .status(EmployeeStatus.PENDING_VALIDATION)
                 .grade(grade)
                 .department(candidate.getDepartment())
                 .sourceCandidate(candidate)

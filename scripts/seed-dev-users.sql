@@ -91,13 +91,43 @@ SELECT
   0
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE lower(email) = lower('teacher@test.com'));
 
+INSERT INTO users (
+  id,
+  created_at,
+  email,
+  first_name,
+  last_name,
+  password_hash,
+  phone,
+  department,
+  role,
+  is_active,
+  is_two_factor_enabled,
+  total_login_count
+)
+SELECT
+  'a0000004-0000-4000-8000-000000000004',
+  now(),
+  'regular.staff@test.com',
+  'Regular',
+  'Staff',
+  crypt('19112002', gen_salt('bf', 10)),
+  '0000000004',
+  'Admin',
+  'REGULAR_STAFF',
+  true,
+  false,
+  0
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE lower(email) = lower('regular.staff@test.com'));
+
 INSERT INTO user_profiles (id, user_id)
 SELECT gen_random_uuid()::text, u.id
 FROM users u
 WHERE lower(u.email) IN (
   lower('hr.staff@test.com'),
   lower('super.admin@test.com'),
-  lower('teacher@test.com')
+  lower('teacher@test.com'),
+  lower('regular.staff@test.com')
 )
 AND NOT EXISTS (SELECT 1 FROM user_profiles p WHERE p.user_id = u.id);
 
@@ -120,6 +150,7 @@ FROM users u
 WHERE lower(u.email) IN (
   lower('hr.staff@test.com'),
   lower('super.admin@test.com'),
-  lower('teacher@test.com')
+  lower('teacher@test.com'),
+  lower('regular.staff@test.com')
 )
 AND NOT EXISTS (SELECT 1 FROM user_statistics s WHERE s.user_id = u.id);

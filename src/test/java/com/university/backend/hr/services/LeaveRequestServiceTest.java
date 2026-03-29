@@ -1,5 +1,7 @@
 package com.university.backend.hr.services;
 
+import com.university.backend.entities.User;
+import com.university.backend.enums.UserRole;
 import com.university.backend.hr.entities.Employee;
 import com.university.backend.hr.entities.LeaveRequest;
 import com.university.backend.hr.enums.LeaveRequestStatus;
@@ -9,6 +11,8 @@ import com.university.backend.hr.repositories.EmployeeRepository;
 import com.university.backend.hr.repositories.LeaveRequestRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -18,6 +22,7 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
@@ -102,5 +107,35 @@ class LeaveRequestServiceTest {
         assertThat(lrCap.getAllValues().get(lrCap.getAllValues().size() - 1).getStatus())
                 .isEqualTo(LeaveRequestStatus.REJECTED);
         verify(employeeRepository, never()).save(any());
+    }
+
+    @Test
+    void assertApproverNotRequester_forbidsWhenApproverMatchesEmployeeEmail() {
+        User approver = User.builder()
+                .email("hr.staff@test.com")
+                .role(UserRole.LOGISTICS_STAFF)
+                .build();
+        Employee employee = Employee.builder().email("hr.staff@test.com").build();
+        LeaveRequest request = LeaveRequest.builder().id("lr1").employee(employee).build();
+        when(leaveRequestRepository.findById("lr1")).thenReturn(Optional.of(request));
+
+        assertThatThrownBy(() -> leaveRequestService.assertApproverNotRequester(approver, "lr1"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    void assertApproverNotRequester_allowsWhenDifferentEmail() {
+        User approver = User.builder()
+                .email("hr.staff@test.com")
+                .role(UserRole.LOGISTICS_STAFF)
+                .build();
+        Employee employee = Employee.builder().email("other@test.com").build();
+        LeaveRequest request = LeaveRequest.builder().id("lr1").employee(employee).build();
+        when(leaveRequestRepository.findById("lr1")).thenReturn(Optional.of(request));
+
+        assertThatCode(() -> leaveRequestService.assertApproverNotRequester(approver, "lr1"))
+                .doesNotThrowAnyException();
     }
 }

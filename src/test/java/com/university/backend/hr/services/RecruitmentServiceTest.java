@@ -5,6 +5,7 @@ import com.university.backend.hr.entities.Department;
 import com.university.backend.hr.entities.Employee;
 import com.university.backend.hr.entities.Grade;
 import com.university.backend.hr.enums.CandidateStatus;
+import com.university.backend.hr.enums.EmployeeStatus;
 import com.university.backend.hr.enums.GradeName;
 import com.university.backend.hr.repositories.CandidateRepository;
 import com.university.backend.hr.repositories.EmployeeRepository;
@@ -76,6 +77,7 @@ class RecruitmentServiceTest {
         assertThat(out.getHireDate()).isEqualTo(LocalDate.now());
         assertThat(out.getEmail()).isEqualTo("a@x.com");
         assertThat(out.getLeaveBalance()).isEqualTo(21);
+        assertThat(out.getStatus()).isEqualTo(EmployeeStatus.PENDING_VALIDATION);
         verify(employeeRepository).save(any(Employee.class));
     }
 
@@ -171,6 +173,7 @@ class RecruitmentServiceTest {
         Employee out = recruitmentService.promoteToEmployee("c1", "g-maitre");
 
         assertThat(out.getGrade().getName()).isEqualTo(GradeName.MAITRE);
+        assertThat(out.getStatus()).isEqualTo(EmployeeStatus.PENDING_VALIDATION);
         verify(gradeRepository, never()).findByName(GradeName.ASSISTANT);
     }
 

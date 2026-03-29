@@ -2,15 +2,17 @@ package com.university.backend.hr.controllers;
 
 import com.university.backend.hr.dto.EmployeeRequest;
 import com.university.backend.hr.dto.EmployeeResponseDto;
+import com.university.backend.hr.dto.PayrollResult;
+import com.university.backend.entities.User;
 import com.university.backend.hr.services.EmployeeService;
-import com.university.backend.hr.services.SalaryCalculator;
+import com.university.backend.hr.services.PayrollService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -19,11 +21,11 @@ import java.util.List;
 public class EmployeeController {
 
     private final EmployeeService employeeService;
-    private final SalaryCalculator salaryCalculator;
+    private final PayrollService payrollService;
 
-    public EmployeeController(EmployeeService employeeService, SalaryCalculator salaryCalculator) {
+    public EmployeeController(EmployeeService employeeService, PayrollService payrollService) {
         this.employeeService = employeeService;
-        this.salaryCalculator = salaryCalculator;
+        this.payrollService = payrollService;
     }
 
     @GetMapping
@@ -34,22 +36,35 @@ public class EmployeeController {
         return ResponseEntity.ok(employeeService.findAll());
     }
 
+    /**
+     * Returns only PENDING_VALIDATION employees for the Super Admin onboarding approvals view.
+     */
+    @GetMapping("/pending")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<EmployeeResponseDto>> listPending() {
+        return ResponseEntity.ok(employeeService.findPendingValidation());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<EmployeeResponseDto> get(@PathVariable String id) {
         return ResponseEntity.ok(employeeService.findById(id));
     }
 
     @PostMapping
-    public ResponseEntity<EmployeeResponseDto> create(@Valid @RequestBody EmployeeRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(employeeService.create(request));
+    public ResponseEntity<EmployeeResponseDto> create(
+            @Valid @RequestBody EmployeeRequest request,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(employeeService.create(request, user.getRole()));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<EmployeeResponseDto> update(
             @PathVariable String id,
-            @Valid @RequestBody EmployeeRequest request
+            @Valid @RequestBody EmployeeRequest request,
+            @AuthenticationPrincipal User user
     ) {
-        return ResponseEntity.ok(employeeService.update(id, request));
+        return ResponseEntity.ok(employeeService.update(id, request, user.getRole()));
     }
 
     @DeleteMapping("/{id}")
@@ -58,8 +73,20 @@ public class EmployeeController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Activates a PENDING_VALIDATION employee — Super Admin only.
+     */
+    @PostMapping("/{id}/activate")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<EmployeeResponseDto> activate(@PathVariable String id) {
+        return ResponseEntity.ok(employeeService.activate(id));
+    }
+
+    /**
+     * Full payroll breakdown (baseSalary, dailyRate, deduction, calculatedSalary).
+     */
     @GetMapping("/{id}/monthly-pay")
-    public ResponseEntity<BigDecimal> monthlyPay(@PathVariable String id) {
-        return ResponseEntity.ok(salaryCalculator.calculateMonthlyPay(employeeService.findEntityById(id)));
+    public ResponseEntity<PayrollResult> monthlyPay(@PathVariable String id) {
+        return ResponseEntity.ok(payrollService.calculate(employeeService.findEntityById(id)));
     }
 }

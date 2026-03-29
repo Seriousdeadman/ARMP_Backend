@@ -1,5 +1,6 @@
 package com.university.backend.hr.dto;
 
+import com.university.backend.hr.enums.EmployeeStatus;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -27,6 +28,9 @@ public class EmployeeRequest {
     private LocalDate hireDate;
 
     private Integer leaveBalance;
+
+    /** Null means ACTIVE (backward compat). HR Staff sets PENDING_VALIDATION when drafting. */
+    private EmployeeStatus status;
 
     @NotBlank
     private String gradeId;
