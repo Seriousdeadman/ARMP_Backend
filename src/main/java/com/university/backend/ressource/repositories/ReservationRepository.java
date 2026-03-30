@@ -1,3 +1,4 @@
+// com.university.backend.ressource.repositories.ReservationRepository.java
 package com.university.backend.ressource.repositories;
 
 import com.university.backend.ressource.entities.Reservation;
@@ -14,36 +15,51 @@ import java.util.List;
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
-    // Get all reservations for a specific user
     List<Reservation> findByUserIdOrderByStartDatetimeDesc(String userId);
 
-    // Get all reservations for a specific resource
-    List<Reservation> findByResourceTypeAndResourceIdOrderByStartDatetimeDesc(
-            ResourceType resourceType, Long resourceId
-    );
-
-    // Get all active reservations for a user
-    List<Reservation> findByUserIdAndStatus(String userId, ReservationStatus status);
-
-    // Check for time slot conflicts on a specific resource
-    @Query("""
-        SELECT COUNT(r) > 0 FROM Reservation r
-        WHERE r.resourceType = :type
-        AND r.resourceId = :resourceId
-        AND r.status = 'ACTIVE'
-        AND r.startDatetime < :end
-        AND r.endDatetime > :start
-    """)
-    boolean existsConflict(
-            @Param("type") ResourceType type,
-            @Param("resourceId") Long resourceId,
-            @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end
-    );
-
-    // Get all reservations (for admin/staff view)
     List<Reservation> findAllByOrderByStartDatetimeDesc();
 
-    // Get all active reservations
-    List<Reservation> findByStatusOrderByStartDatetimeDesc(ReservationStatus status);
+    List<Reservation> findByResourceTypeAndResourceIdOrderByStartDatetimeDesc(
+            ResourceType resourceType, Long resourceId);
+
+    // Check for conflicts
+    @Query("SELECT COUNT(r) > 0 FROM Reservation r " +
+            "WHERE r.resourceType = :resourceType " +
+            "AND r.resourceId = :resourceId " +
+            "AND r.status = 'ACTIVE' " +
+            "AND r.startDatetime < :endDateTime " +
+            "AND r.endDatetime > :startDateTime")
+    boolean existsConflict(@Param("resourceType") ResourceType resourceType,
+                           @Param("resourceId") Long resourceId,
+                           @Param("startDateTime") LocalDateTime startDateTime,
+                           @Param("endDateTime") LocalDateTime endDateTime);
+
+    // Find reservations between dates for a specific resource
+    @Query("SELECT r FROM Reservation r " +
+            "WHERE r.resourceType = :resourceType " +
+            "AND r.resourceId = :resourceId " +
+            "AND r.startDatetime >= :start " +
+            "AND r.startDatetime <= :end " +
+            "AND r.status = 'ACTIVE'")
+    List<Reservation> findByResourceTypeAndResourceIdAndStartDatetimeBetween(
+            @Param("resourceType") ResourceType resourceType,
+            @Param("resourceId") Long resourceId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
+
+    // Find all active reservations for a resource
+    List<Reservation> findByResourceTypeAndResourceIdAndStatus(
+            ResourceType resourceType, Long resourceId, ReservationStatus status);
+
+    // Check if resource has any active reservations in time range
+    @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END FROM Reservation r " +
+            "WHERE r.resourceType = :resourceType " +
+            "AND r.resourceId = :resourceId " +
+            "AND r.status = 'ACTIVE' " +
+            "AND r.startDatetime < :endDateTime " +
+            "AND r.endDatetime > :startDateTime")
+    boolean hasActiveReservationsInRange(@Param("resourceType") ResourceType resourceType,
+                                         @Param("resourceId") Long resourceId,
+                                         @Param("startDateTime") LocalDateTime startDateTime,
+                                         @Param("endDateTime") LocalDateTime endDateTime);
 }
