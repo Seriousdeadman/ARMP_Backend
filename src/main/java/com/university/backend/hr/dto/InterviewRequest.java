@@ -33,4 +33,7 @@ public class InterviewRequest {
 
     @NotBlank
     private String candidateId;
+
+    /** Required for create/update; must reference an ACTIVE employee. */
+    private String interviewerId;
 }

@@ -37,4 +37,10 @@ public class EmployeeRequest {
 
     @NotBlank
     private String departmentId;
+
+    /**
+     * When true and the creator is SUPER_ADMIN, sets the {@code users} row with the same email
+     * (case-insensitive) to {@code LOGISTICS_STAFF}. Ignored for other creators. Never changes {@code SUPER_ADMIN}.
+     */
+    private Boolean grantLogisticsStaffRole;
 }

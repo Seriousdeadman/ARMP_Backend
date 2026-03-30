@@ -4,14 +4,18 @@ import com.university.backend.hr.dto.InterviewRequest;
 import com.university.backend.hr.dto.InterviewResponseDto;
 import com.university.backend.hr.dto.HrResponseMapper;
 import com.university.backend.hr.entities.Candidate;
+import com.university.backend.hr.entities.Employee;
 import com.university.backend.hr.entities.Interview;
+import com.university.backend.hr.enums.EmployeeStatus;
 import com.university.backend.hr.enums.InterviewStatus;
 import com.university.backend.hr.repositories.CandidateRepository;
+import com.university.backend.hr.repositories.EmployeeRepository;
 import com.university.backend.hr.repositories.InterviewRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -23,6 +27,7 @@ public class InterviewService {
 
     private final InterviewRepository interviewRepository;
     private final CandidateRepository candidateRepository;
+    private final EmployeeRepository employeeRepository;
     private final RecruitmentService recruitmentService;
 
     public List<InterviewResponseDto> findAll() {
@@ -50,12 +55,15 @@ public class InterviewService {
     public InterviewResponseDto create(InterviewRequest request) {
         Candidate candidate = candidateRepository.findById(request.getCandidateId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Candidate not found"));
+        Employee interviewer = resolveActiveInterviewer(request.getInterviewerId());
+        Integer score = resolvedScore(request.getStatus(), request.getScore());
         Interview interview = Interview.builder()
                 .interviewDate(request.getInterviewDate())
                 .location(request.getLocation())
-                .score(request.getScore())
+                .score(score)
                 .status(request.getStatus())
                 .candidate(candidate)
+                .interviewer(interviewer)
                 .build();
         Interview savedInterview = interviewRepository.save(interview);
         if (request.getStatus() == InterviewStatus.PLANNED) {
@@ -69,16 +77,19 @@ public class InterviewService {
         Interview interview = findEntityById(id);
         Candidate candidate = candidateRepository.findById(request.getCandidateId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Candidate not found"));
+        Employee interviewer = resolveActiveInterviewer(request.getInterviewerId());
+        Integer score = resolvedScore(request.getStatus(), request.getScore());
         interview.setInterviewDate(request.getInterviewDate());
         interview.setLocation(request.getLocation());
-        interview.setScore(request.getScore());
+        interview.setScore(score);
         interview.setStatus(request.getStatus());
         interview.setCandidate(candidate);
-        Interview savedInterview = interviewRepository.save(interview);
+        interview.setInterviewer(interviewer);
+        interviewRepository.save(interview);
         if (request.getStatus() == InterviewStatus.PLANNED) {
             recruitmentService.syncCandidateStatusAfterPlannedInterview(candidate.getId());
         }
-        return HrResponseMapper.toInterviewResponse(findEntityById(savedInterview.getId()));
+        return HrResponseMapper.toInterviewResponse(findEntityById(id));
     }
 
     @Transactional
@@ -87,5 +98,27 @@ public class InterviewService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Interview not found");
         }
         interviewRepository.deleteById(id);
+    }
+
+    private Employee resolveActiveInterviewer(String interviewerId) {
+        if (!StringUtils.hasText(interviewerId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Interviewer is required");
+        }
+        Employee employee = employeeRepository.findById(interviewerId.trim())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interviewer not found"));
+        if (employee.getStatus() != EmployeeStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Interviewer must be an ACTIVE employee");
+        }
+        return employee;
+    }
+
+    /**
+     * Score is only stored when the interview is completed; otherwise cleared.
+     */
+    private static Integer resolvedScore(InterviewStatus status, Integer requestedScore) {
+        if (status != InterviewStatus.COMPLETED) {
+            return null;
+        }
+        return requestedScore;
     }
 }

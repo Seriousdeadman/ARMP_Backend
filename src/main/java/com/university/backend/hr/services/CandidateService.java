@@ -42,6 +42,23 @@ public class CandidateService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Candidates still in the hiring pipeline (not yet promoted to an employee). Use for interview scheduling
+     * so hired people only appear as employees/interviewers, not as interview subjects.
+     */
+    public List<CandidateResponseDto> findAllNotYetPromoted(String departmentIdFilter) {
+        List<Candidate> rows = candidateRepository.findAllNotYetPromotedToEmployee();
+        if (departmentIdFilter != null && !departmentIdFilter.isBlank()) {
+            String id = departmentIdFilter.trim();
+            rows = rows.stream()
+                    .filter(c -> c.getDepartment() != null && id.equals(c.getDepartment().getId()))
+                    .collect(Collectors.toList());
+        }
+        return rows.stream()
+                .map(HrResponseMapper::toCandidateResponse)
+                .collect(Collectors.toList());
+    }
+
     public CandidateResponseDto findById(String id) {
         return HrResponseMapper.toCandidateResponse(findEntityById(id));
     }

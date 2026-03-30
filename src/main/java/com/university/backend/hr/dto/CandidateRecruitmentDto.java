@@ -8,6 +8,7 @@ public record CandidateRecruitmentDto(
         String email,
         String phone,
         CandidateStatus status,
+        String departmentId,
         String departmentName,
         Integer interviewScore
 ) {}

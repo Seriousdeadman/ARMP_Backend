@@ -8,6 +8,7 @@ import com.university.backend.hr.dto.CvFileMetadataDto;
 import com.university.backend.hr.dto.CvRequest;
 import com.university.backend.hr.entities.Cv;
 import com.university.backend.hr.entities.Employee;
+import com.university.backend.entities.User;
 import com.university.backend.hr.services.CandidateService;
 import com.university.backend.hr.services.RecruitmentService;
 import jakarta.validation.Valid;
@@ -16,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,7 +40,12 @@ public class CandidateController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CandidateResponseDto>> list(@RequestParam(required = false) String departmentId) {
+    public ResponseEntity<List<CandidateResponseDto>> list(
+            @RequestParam(required = false) String departmentId,
+            @RequestParam(required = false, defaultValue = "false") boolean excludePromoted) {
+        if (excludePromoted) {
+            return ResponseEntity.ok(candidateService.findAllNotYetPromoted(departmentId));
+        }
         if (departmentId != null) {
             return ResponseEntity.ok(candidateService.findByDepartmentId(departmentId));
         }
@@ -85,10 +92,12 @@ public class CandidateController {
     @PostMapping("/{id}/promote")
     public ResponseEntity<Employee> promoteToEmployee(
             @PathVariable String id,
-            @RequestBody(required = false) PromoteCandidateRequest body
+            @RequestBody(required = false) PromoteCandidateRequest body,
+            @AuthenticationPrincipal User user
     ) {
         String gradeId = body != null ? body.getGradeId() : null;
-        return ResponseEntity.ok(recruitmentService.promoteToEmployee(id, gradeId));
+        String departmentId = body != null ? body.getDepartmentId() : null;
+        return ResponseEntity.ok(recruitmentService.promoteToEmployee(id, gradeId, departmentId, user));
     }
 
     @PatchMapping("/{id}/status")

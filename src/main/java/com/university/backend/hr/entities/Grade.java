@@ -2,6 +2,8 @@ package com.university.backend.hr.entities;
 
 import com.university.backend.hr.enums.GradeName;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,8 +23,8 @@ public class Grade {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, unique = true)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, unique = true, length = 32)
     private GradeName name;
 
     @Column(nullable = false, precision = 12, scale = 2)

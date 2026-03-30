@@ -12,6 +12,7 @@ import com.university.backend.enums.UserRole;
 import com.university.backend.hr.repositories.DepartmentRepository;
 import com.university.backend.hr.repositories.EmployeeRepository;
 import com.university.backend.hr.repositories.GradeRepository;
+import com.university.backend.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class EmployeeService {
     private final GradeRepository gradeRepository;
     private final DepartmentRepository departmentRepository;
     private final PayrollService payrollService;
+    private final UserRepository userRepository;
 
     public List<EmployeeResponseDto> findAll() {
         return employeeRepository.findAll().stream()
@@ -38,12 +40,6 @@ public class EmployeeService {
 
     public List<EmployeeResponseDto> findByDepartmentId(String departmentId) {
         return employeeRepository.findByDepartmentId(departmentId).stream()
-                .map(e -> toResponseWithPayroll(e))
-                .collect(Collectors.toList());
-    }
-
-    public List<EmployeeResponseDto> findPendingValidation() {
-        return employeeRepository.findByStatus(EmployeeStatus.PENDING_VALIDATION).stream()
                 .map(e -> toResponseWithPayroll(e))
                 .collect(Collectors.toList());
     }
@@ -87,6 +83,7 @@ public class EmployeeService {
             builder.leaveBalance(21);
         }
         Employee savedEmployee = employeeRepository.save(builder.build());
+        applyLogisticsStaffGrantIfRequested(request.getEmail(), request.getGrantLogisticsStaffRole(), creatorRole);
         return toResponseWithPayroll(findEntityById(savedEmployee.getId()));
     }
 
@@ -117,7 +114,21 @@ public class EmployeeService {
         employee.setGrade(grade);
         employee.setDepartment(department);
         Employee savedEmployee = employeeRepository.save(employee);
+        applyLogisticsStaffGrantIfRequested(request.getEmail(), request.getGrantLogisticsStaffRole(), updaterRole);
         return toResponseWithPayroll(findEntityById(savedEmployee.getId()));
+    }
+
+    private void applyLogisticsStaffGrantIfRequested(String email, Boolean grant, UserRole actorRole) {
+        if (actorRole != UserRole.SUPER_ADMIN || !Boolean.TRUE.equals(grant) || email == null || email.isBlank()) {
+            return;
+        }
+        userRepository.findByEmailIgnoreCase(email.trim()).ifPresent(u -> {
+            if (u.getRole() == UserRole.SUPER_ADMIN) {
+                return;
+            }
+            u.setRole(UserRole.LOGISTICS_STAFF);
+            userRepository.save(u);
+        });
     }
 
     /**

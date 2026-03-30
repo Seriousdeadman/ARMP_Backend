@@ -35,12 +35,24 @@ public class Interview {
     @Column
     private Integer score;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 32)
     private InterviewStatus status;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "candidate_id", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "cv", "hiredEmployee"})
     private Candidate candidate;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "interviewer_id")
+    @JsonIgnoreProperties({
+            "hibernateLazyInitializer",
+            "handler",
+            "grade",
+            "department",
+            "sourceCandidate",
+            "promotedBy"
+    })
+    private Employee interviewer;
 }

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,6 +19,9 @@ public interface InterviewRepository extends JpaRepository<Interview, String> {
 
     @EntityGraph(attributePaths = {"candidate", "candidate.department"})
     List<Interview> findByCandidate_Id(String candidateId);
+
+    @EntityGraph(attributePaths = {"candidate", "candidate.department"})
+    List<Interview> findByCandidate_IdIn(Collection<String> candidateIds);
 
     @Override
     @EntityGraph(attributePaths = {"candidate", "candidate.department"})

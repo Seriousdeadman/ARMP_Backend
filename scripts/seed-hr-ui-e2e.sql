@@ -246,6 +246,13 @@ WHERE g.name = 'ASSISTANT'
   AND lower(d.name) = lower('Computer Science')
   AND NOT EXISTS (SELECT 1 FROM hr_employees e WHERE lower(e.email) = lower('teacher@test.com'));
 
+-- Backfill interview interviewer (requires interviewer_id column from JPA ddl-auto or equivalent)
+UPDATE hr_interviews i
+SET interviewer_id = e.id
+FROM hr_employees e
+WHERE lower(e.email) = lower('hr.staff@test.com')
+  AND i.interviewer_id IS NULL;
+
 -- ---------------------------------------------------------------------------
 -- 5) Leave requests for admin actions + status display
 -- ---------------------------------------------------------------------------

@@ -1,13 +1,17 @@
 package com.university.backend.hr.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.university.backend.entities.User;
 import com.university.backend.hr.enums.EmployeeStatus;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 @Entity
@@ -50,8 +54,16 @@ public class Employee {
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "cv", "department", "hiredEmployee"})
     private Candidate sourceCandidate;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "promoted_at")
+    private Instant promotedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "promoted_by_user_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "passwordHash"})
+    private User promotedBy;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 32)
     @Builder.Default
     private EmployeeStatus status = EmployeeStatus.ACTIVE;
 }

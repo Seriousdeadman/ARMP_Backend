@@ -34,8 +34,8 @@ public class Candidate {
     @Column(nullable = false)
     private String phone;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 32)
     private CandidateStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)

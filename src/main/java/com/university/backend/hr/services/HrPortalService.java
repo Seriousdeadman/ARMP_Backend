@@ -69,6 +69,7 @@ public class HrPortalService {
 
     @Transactional(readOnly = true)
     public ApplicationStatusResponse getApplicationStatus(User user) {
+        requirePortalUser(user);
         Optional<Candidate> candidateOpt = findPortalCandidateByEmail(user.getEmail());
         if (candidateOpt.isEmpty()) {
             return ApplicationStatusResponse.notLinked();
@@ -137,6 +138,7 @@ public class HrPortalService {
 
     @Transactional
     public LeaveSummaryResponse getLeaveSummary(User user) {
+        requirePortalUser(user);
         Optional<Employee> employeeOpt = findEmployeeOrAutoProvisionStaff(user);
         if (employeeOpt.isEmpty()) {
             return LeaveSummaryResponse.notLinked();
@@ -363,6 +365,12 @@ public class HrPortalService {
                 ));
         assertActiveForSelfService(employee);
         return employee;
+    }
+
+    private static void requirePortalUser(User user) {
+        if (user == null || user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated.");
+        }
     }
 
     private Optional<Candidate> findPortalCandidateByEmail(String email) {

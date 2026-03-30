@@ -39,4 +39,11 @@ public interface CandidateRepository extends JpaRepository<Candidate, String> {
      */
     @Query("SELECT c FROM Candidate c WHERE c.id = :id")
     Optional<Candidate> findPortalById(@Param("id") String id);
+
+    /**
+     * Talent board: exclude candidates already promoted to an employee (still ACCEPTED in DB).
+     */
+    @EntityGraph(attributePaths = {"department", "cv"})
+    @Query("SELECT c FROM Candidate c WHERE NOT EXISTS (SELECT 1 FROM Employee e WHERE e.sourceCandidate.id = c.id)")
+    List<Candidate> findAllNotYetPromotedToEmployee();
 }

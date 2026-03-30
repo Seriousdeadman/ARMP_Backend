@@ -3,6 +3,7 @@ package com.university.backend.hr.web;
 import com.university.backend.hr.dto.CandidateRecruitmentDto;
 import com.university.backend.hr.dto.EmployeeDirectoryDto;
 import com.university.backend.hr.dto.LeaveRequestAdminDto;
+import com.university.backend.hr.dto.RecruitmentAssignmentDto;
 import com.university.backend.hr.entities.LeaveRequest;
 import com.university.backend.entities.User;
 import com.university.backend.hr.services.HrDashboardService;
@@ -27,6 +28,11 @@ public class HrController {
     @GetMapping("/candidates/recruitment")
     public ResponseEntity<List<CandidateRecruitmentDto>> listRecruitmentCandidates() {
         return ResponseEntity.ok(hrDashboardService.listCandidatesForRecruitment());
+    }
+
+    @GetMapping("/candidates/recruitment/assignments")
+    public ResponseEntity<List<RecruitmentAssignmentDto>> listRecruitmentAssignments() {
+        return ResponseEntity.ok(hrDashboardService.listRecruitmentAssignments());
     }
 
     @GetMapping("/leave-requests/pending")

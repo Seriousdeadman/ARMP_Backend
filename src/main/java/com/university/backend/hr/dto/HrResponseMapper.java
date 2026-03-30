@@ -84,6 +84,17 @@ public final class HrResponseMapper {
                 .build();
     }
 
+    public static InterviewerSummaryDto toInterviewerSummary(Employee employee) {
+        if (employee == null) {
+            return null;
+        }
+        return InterviewerSummaryDto.builder()
+                .id(employee.getId())
+                .name(employee.getName())
+                .email(employee.getEmail())
+                .build();
+    }
+
     public static InterviewResponseDto toInterviewResponse(Interview interview) {
         if (interview == null) {
             return null;
@@ -95,6 +106,7 @@ public final class HrResponseMapper {
                 .score(interview.getScore())
                 .status(interview.getStatus())
                 .candidate(toCandidateResponse(interview.getCandidate()))
+                .interviewer(toInterviewerSummary(interview.getInterviewer()))
                 .build();
     }
 }

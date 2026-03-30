@@ -8,6 +8,7 @@ import com.university.backend.hr.enums.CandidateStatus;
 import com.university.backend.hr.enums.EmployeeStatus;
 import com.university.backend.hr.enums.GradeName;
 import com.university.backend.hr.repositories.CandidateRepository;
+import com.university.backend.hr.repositories.DepartmentRepository;
 import com.university.backend.hr.repositories.EmployeeRepository;
 import com.university.backend.hr.repositories.GradeRepository;
 import com.university.backend.repositories.UserRepository;
@@ -43,6 +44,9 @@ class RecruitmentServiceTest {
     private GradeRepository gradeRepository;
 
     @Mock
+    private DepartmentRepository departmentRepository;
+
+    @Mock
     private UserRepository userRepository;
 
     @InjectMocks
@@ -66,8 +70,8 @@ class RecruitmentServiceTest {
                 .hourlyBonus(BigDecimal.ZERO)
                 .build();
         when(candidateRepository.findById("c1")).thenReturn(Optional.of(candidate));
-        when(employeeRepository.existsBySourceCandidate_Id("c1")).thenReturn(false);
-        when(employeeRepository.findByEmail("a@x.com")).thenReturn(Optional.empty());
+        when(employeeRepository.findBySourceCandidateId("c1")).thenReturn(Optional.empty());
+        when(employeeRepository.findByEmailIgnoreCase("a@x.com")).thenReturn(Optional.empty());
         when(gradeRepository.findByName(GradeName.ASSISTANT)).thenReturn(Optional.of(grade));
         when(employeeRepository.save(any(Employee.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -79,6 +83,38 @@ class RecruitmentServiceTest {
         assertThat(out.getLeaveBalance()).isEqualTo(21);
         assertThat(out.getStatus()).isEqualTo(EmployeeStatus.PENDING_VALIDATION);
         verify(employeeRepository).save(any(Employee.class));
+    }
+
+    @Test
+    void promoteToEmployee_idempotentReturnsExistingWhenAlreadyPromoted() {
+        Department dept = Department.builder().id("d1").name("CS").build();
+        Candidate candidate = Candidate.builder()
+                .id("c1")
+                .name("Alex")
+                .email("a@x.com")
+                .phone("1")
+                .status(CandidateStatus.ACCEPTED)
+                .department(dept)
+                .build();
+        Employee existing = Employee.builder()
+                .id("e1")
+                .name("Alex")
+                .email("a@x.com")
+                .hireDate(LocalDate.now())
+                .leaveBalance(21)
+                .status(EmployeeStatus.PENDING_VALIDATION)
+                .grade(Grade.builder().id("g1").name(GradeName.ASSISTANT)
+                        .baseSalary(BigDecimal.ONE).hourlyBonus(BigDecimal.ZERO).build())
+                .department(dept)
+                .sourceCandidate(candidate)
+                .build();
+        when(candidateRepository.findById("c1")).thenReturn(Optional.of(candidate));
+        when(employeeRepository.findBySourceCandidateId("c1")).thenReturn(Optional.of(existing));
+
+        Employee out = recruitmentService.promoteToEmployee("c1", null);
+
+        assertThat(out).isSameAs(existing);
+        verify(employeeRepository, never()).save(any());
     }
 
     @Test
@@ -116,8 +152,8 @@ class RecruitmentServiceTest {
                 .hourlyBonus(BigDecimal.ZERO)
                 .build();
         when(candidateRepository.findById("c1")).thenReturn(Optional.of(candidate));
-        when(employeeRepository.existsBySourceCandidate_Id("c1")).thenReturn(false);
-        when(employeeRepository.findByEmail("j@x.com")).thenReturn(Optional.empty());
+        when(employeeRepository.findBySourceCandidateId("c1")).thenReturn(Optional.empty());
+        when(employeeRepository.findByEmailIgnoreCase("j@x.com")).thenReturn(Optional.empty());
         when(gradeRepository.findByName(GradeName.ASSISTANT)).thenReturn(Optional.of(assistant));
         when(employeeRepository.save(any(Employee.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -165,8 +201,8 @@ class RecruitmentServiceTest {
                 .hourlyBonus(BigDecimal.ONE)
                 .build();
         when(candidateRepository.findById("c1")).thenReturn(Optional.of(candidate));
-        when(employeeRepository.existsBySourceCandidate_Id("c1")).thenReturn(false);
-        when(employeeRepository.findByEmail("a@x.com")).thenReturn(Optional.empty());
+        when(employeeRepository.findBySourceCandidateId("c1")).thenReturn(Optional.empty());
+        when(employeeRepository.findByEmailIgnoreCase("a@x.com")).thenReturn(Optional.empty());
         when(gradeRepository.findById("g-maitre")).thenReturn(Optional.of(maitre));
         when(employeeRepository.save(any(Employee.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -175,6 +211,37 @@ class RecruitmentServiceTest {
         assertThat(out.getGrade().getName()).isEqualTo(GradeName.MAITRE);
         assertThat(out.getStatus()).isEqualTo(EmployeeStatus.PENDING_VALIDATION);
         verify(gradeRepository, never()).findByName(GradeName.ASSISTANT);
+    }
+
+    @Test
+    void promoteToEmployee_usesDepartmentIdWhenProvided() {
+        Department appliedDept = Department.builder().id("d-applied").name("Math").build();
+        Department hireDept = Department.builder().id("d-hire").name("Physics").build();
+        Candidate candidate = Candidate.builder()
+                .id("c1")
+                .name("Alex Doe")
+                .email("a@x.com")
+                .phone("1")
+                .status(CandidateStatus.ACCEPTED)
+                .department(appliedDept)
+                .build();
+        Grade grade = Grade.builder()
+                .id("g1")
+                .name(GradeName.ASSISTANT)
+                .baseSalary(new BigDecimal("3000.00"))
+                .hourlyBonus(BigDecimal.ZERO)
+                .build();
+        when(candidateRepository.findById("c1")).thenReturn(Optional.of(candidate));
+        when(employeeRepository.findBySourceCandidateId("c1")).thenReturn(Optional.empty());
+        when(employeeRepository.findByEmailIgnoreCase("a@x.com")).thenReturn(Optional.empty());
+        when(gradeRepository.findByName(GradeName.ASSISTANT)).thenReturn(Optional.of(grade));
+        when(departmentRepository.findById("d-hire")).thenReturn(Optional.of(hireDept));
+        when(employeeRepository.save(any(Employee.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Employee out = recruitmentService.promoteToEmployee("c1", null, "d-hire", null);
+
+        assertThat(out.getDepartment().getId()).isEqualTo("d-hire");
+        assertThat(out.getDepartment().getName()).isEqualTo("Physics");
     }
 
     @Test

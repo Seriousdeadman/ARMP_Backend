@@ -1,18 +1,14 @@
 package com.university.backend.hr.dto;
 
 import com.university.backend.hr.enums.InterviewStatus;
-import lombok.Builder;
 
 import java.time.LocalDateTime;
 
-@Builder
-public record InterviewResponseDto(
+public record InterviewTimelineItemDto(
         String id,
         LocalDateTime interviewDate,
         String location,
-        Integer score,
         InterviewStatus status,
-        CandidateResponseDto candidate,
-        InterviewerSummaryDto interviewer
+        Integer score
 ) {
 }

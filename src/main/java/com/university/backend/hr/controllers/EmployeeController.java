@@ -36,15 +36,6 @@ public class EmployeeController {
         return ResponseEntity.ok(employeeService.findAll());
     }
 
-    /**
-     * Returns only PENDING_VALIDATION employees for the Super Admin onboarding approvals view.
-     */
-    @GetMapping("/pending")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
-    public ResponseEntity<List<EmployeeResponseDto>> listPending() {
-        return ResponseEntity.ok(employeeService.findPendingValidation());
-    }
-
     @GetMapping("/{id}")
     public ResponseEntity<EmployeeResponseDto> get(@PathVariable String id) {
         return ResponseEntity.ok(employeeService.findById(id));
