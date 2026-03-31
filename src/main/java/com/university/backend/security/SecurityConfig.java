@@ -1,3 +1,4 @@
+// com.university.backend.security.SecurityConfig.java
 package com.university.backend.security;
 
 import lombok.RequiredArgsConstructor;
@@ -64,10 +65,17 @@ public class SecurityConfig {
                                 "/api/equipment/**"
                         ).hasAnyRole("LOGISTICS_STAFF", "SUPER_ADMIN")
                         .requestMatchers("/api/reservations/my").authenticated()
+                        .requestMatchers("/api/reservations/my/past").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/reservations").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/reservations/*/cancel").authenticated()
                         .requestMatchers("/api/reservations/resource/**").authenticated()
+                        .requestMatchers("/api/reservations/smart-book").authenticated()
+                        .requestMatchers("/api/reservations/resolve-conflict").authenticated()
                         .requestMatchers("/api/reservations").hasAnyRole("LOGISTICS_STAFF", "SUPER_ADMIN")
+                        .requestMatchers("/api/reservations/active").hasAnyRole("LOGISTICS_STAFF", "SUPER_ADMIN")
+                        .requestMatchers("/api/reservations/upcoming").hasAnyRole("LOGISTICS_STAFF", "SUPER_ADMIN")
+                        .requestMatchers("/api/reservations/cancelled").hasAnyRole("LOGISTICS_STAFF", "SUPER_ADMIN")
+                        .requestMatchers("/api/reservations/stats").hasAnyRole("LOGISTICS_STAFF", "SUPER_ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/api/audit/**").authenticated()
                         .anyRequest().authenticated()

@@ -1,20 +1,17 @@
+// com.university.backend.ressource.services.ReservationService.java
 package com.university.backend.ressource.services;
 
 import com.university.backend.ressource.dto.ReservationRequest;
 import com.university.backend.ressource.dto.ReservationResponse;
-import com.university.backend.ressource.entities.Reservation;
+import com.university.backend.ressource.entities.*;
 import com.university.backend.ressource.enums.ReservationStatus;
 import com.university.backend.ressource.enums.ResourceType;
-import com.university.backend.ressource.repositories.ReservationRepository;
-import com.university.backend.ressource.repositories.ClassroomRepository;
-import com.university.backend.ressource.repositories.LaboratoryRepository;
-import com.university.backend.ressource.repositories.CollaborativeSpaceRepository;
-import com.university.backend.ressource.repositories.EquipmentRepository;
+import com.university.backend.ressource.repositories.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,8 +24,8 @@ public class ReservationService {
     private final CollaborativeSpaceRepository collaborativeSpaceRepository;
     private final EquipmentRepository equipmentRepository;
 
+    // Create a new reservation
     public ReservationResponse create(String userId, ReservationRequest request) {
-
         // 1. Validate time range
         if (request.getStartDatetime().isAfter(request.getEndDatetime()) ||
                 request.getStartDatetime().isEqual(request.getEndDatetime())) {
@@ -67,22 +64,69 @@ public class ReservationService {
         return toResponse(reservationRepository.save(reservation));
     }
 
+    // Get user's reservations - ONLY ACTIVE AND FUTURE
     public List<ReservationResponse> getMyReservations(String userId) {
-        return reservationRepository.findByUserIdOrderByStartDatetimeDesc(userId)
-                .stream().map(this::toResponse).collect(Collectors.toList());
+        LocalDateTime now = LocalDateTime.now();
+
+        return reservationRepository.findActiveFutureReservations(userId, now)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
-    public List<ReservationResponse> getAllReservations() {
+    // Get user's past reservations (for history/stats)
+    public List<ReservationResponse> getMyPastReservations(String userId) {
+        LocalDateTime now = LocalDateTime.now();
+
+        return reservationRepository.findPastReservations(userId, now)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    // Get all reservations for admin (includes past and cancelled)
+    public List<ReservationResponse> getAllReservationsForAdmin() {
         return reservationRepository.findAllByOrderByStartDatetimeDesc()
-                .stream().map(this::toResponse).collect(Collectors.toList());
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
+    // Get all active reservations for admin
+    public List<ReservationResponse> getAllActiveReservations() {
+        return reservationRepository.findAllActiveReservations()
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    // Get upcoming active reservations
+    public List<ReservationResponse> getUpcomingReservations() {
+        LocalDateTime now = LocalDateTime.now();
+        return reservationRepository.findUpcomingActiveReservations(now)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    // Get all cancelled reservations
+    public List<ReservationResponse> getAllCancelledReservations() {
+        return reservationRepository.findAllCancelledReservations()
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    // Get reservations by resource
     public List<ReservationResponse> getByResource(ResourceType type, Long resourceId) {
         return reservationRepository
                 .findByResourceTypeAndResourceIdOrderByStartDatetimeDesc(type, resourceId)
-                .stream().map(this::toResponse).collect(Collectors.toList());
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
+    // Cancel a reservation
     public ReservationResponse cancel(Long reservationId, String userId, boolean isStaff) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new RuntimeException("Reservation not found."));
@@ -98,6 +142,49 @@ public class ReservationService {
 
         reservation.setStatus(ReservationStatus.CANCELLED);
         return toResponse(reservationRepository.save(reservation));
+    }
+
+    // ========== ADMIN DASHBOARD STATS METHODS ==========
+
+    public Map<String, Object> getReservationStats() {
+        Map<String, Object> stats = new HashMap<>();
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime weekAgo = now.minusDays(7);
+        LocalDateTime monthAgo = now.minusDays(30);
+
+        // Total reservations (all time)
+        stats.put("totalReservations", reservationRepository.count());
+
+        // Active reservations count
+        stats.put("activeReservations", reservationRepository.countByStatus(ReservationStatus.ACTIVE));
+
+        // Cancelled reservations count
+        stats.put("cancelledReservations", reservationRepository.countByStatus(ReservationStatus.CANCELLED));
+
+        // Upcoming reservations count
+        stats.put("upcomingReservations", (long) reservationRepository.findUpcomingActiveReservations(now).size());
+
+        // Reservations by resource type
+        Map<String, Long> byType = new HashMap<>();
+        for (ResourceType type : ResourceType.values()) {
+            byType.put(type.name(), reservationRepository.countActiveByResourceType(type));
+        }
+        stats.put("reservationsByType", byType);
+
+        // Weekly stats
+        stats.put("weeklyReservations", reservationRepository.countByStartDatetimeBetween(weekAgo, now));
+
+        // Monthly stats
+        stats.put("monthlyReservations", reservationRepository.countByStartDatetimeBetween(monthAgo, now));
+
+        // Get recent reservations (last 10)
+        List<Reservation> recent = reservationRepository.findAllByOrderByStartDatetimeDesc()
+                .stream()
+                .limit(10)
+                .collect(Collectors.toList());
+        stats.put("recentReservations", recent.stream().map(this::toResponse).collect(Collectors.toList()));
+
+        return stats;
     }
 
     private void validateResourceAvailable(ResourceType type, Long resourceId) {
@@ -125,13 +212,13 @@ public class ReservationService {
         try {
             return switch (type) {
                 case CLASSROOM -> classroomRepository.findById(resourceId)
-                        .map(c -> c.getName()).orElse("Unknown");
+                        .map(Classroom::getName).orElse("Unknown");
                 case LABORATORY -> laboratoryRepository.findById(resourceId)
-                        .map(l -> l.getName()).orElse("Unknown");
+                        .map(Laboratory::getName).orElse("Unknown");
                 case COLLABORATIVE_SPACE -> collaborativeSpaceRepository.findById(resourceId)
-                        .map(s -> s.getName()).orElse("Unknown");
+                        .map(CollaborativeSpace::getName).orElse("Unknown");
                 case EQUIPMENT -> equipmentRepository.findById(resourceId)
-                        .map(e -> e.getName()).orElse("Unknown");
+                        .map(Equipment::getName).orElse("Unknown");
             };
         } catch (Exception e) {
             return "Unknown";

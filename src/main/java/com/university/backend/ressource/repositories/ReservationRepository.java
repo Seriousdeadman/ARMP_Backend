@@ -15,10 +15,13 @@ import java.util.List;
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
+    // Get reservations by user (all)
     List<Reservation> findByUserIdOrderByStartDatetimeDesc(String userId);
 
+    // Get all reservations ordered by start time
     List<Reservation> findAllByOrderByStartDatetimeDesc();
 
+    // Get reservations by resource
     List<Reservation> findByResourceTypeAndResourceIdOrderByStartDatetimeDesc(
             ResourceType resourceType, Long resourceId);
 
@@ -62,4 +65,61 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
                                          @Param("resourceId") Long resourceId,
                                          @Param("startDateTime") LocalDateTime startDateTime,
                                          @Param("endDateTime") LocalDateTime endDateTime);
+
+    // ========== NEW METHODS FOR FILTERING ==========
+
+    // Get only active and future reservations for a user
+    @Query("SELECT r FROM Reservation r " +
+            "WHERE r.userId = :userId " +
+            "AND r.status = 'ACTIVE' " +
+            "AND r.endDatetime > :now " +
+            "ORDER BY r.startDatetime DESC")
+    List<Reservation> findActiveFutureReservations(@Param("userId") String userId,
+                                                   @Param("now") LocalDateTime now);
+
+    // Get past reservations (ended or cancelled)
+    @Query("SELECT r FROM Reservation r " +
+            "WHERE r.userId = :userId " +
+            "AND (r.status = 'CANCELLED' OR r.endDatetime < :now) " +
+            "ORDER BY r.startDatetime DESC")
+    List<Reservation> findPastReservations(@Param("userId") String userId,
+                                           @Param("now") LocalDateTime now);
+
+    // Get all active reservations (for admin)
+    @Query("SELECT r FROM Reservation r " +
+            "WHERE r.status = 'ACTIVE' " +
+            "ORDER BY r.startDatetime DESC")
+    List<Reservation> findAllActiveReservations();
+
+    // Get upcoming active reservations (future)
+    @Query("SELECT r FROM Reservation r " +
+            "WHERE r.status = 'ACTIVE' " +
+            "AND r.endDatetime > :now " +
+            "ORDER BY r.startDatetime ASC")
+    List<Reservation> findUpcomingActiveReservations(@Param("now") LocalDateTime now);
+
+    // Count active reservations by resource type
+    @Query("SELECT COUNT(r) FROM Reservation r " +
+            "WHERE r.resourceType = :type " +
+            "AND r.status = 'ACTIVE'")
+    long countActiveByResourceType(@Param("type") ResourceType type);
+
+    // Count reservations by status
+    long countByStatus(ReservationStatus status);
+
+    // Count reservations between dates
+    long countByStartDatetimeBetween(LocalDateTime start, LocalDateTime end);
+
+    // Get all cancelled reservations
+    @Query("SELECT r FROM Reservation r " +
+            "WHERE r.status = 'CANCELLED' " +
+            "ORDER BY r.startDatetime DESC")
+    List<Reservation> findAllCancelledReservations();
+
+    // Get reservations by date range for admin dashboard
+    @Query("SELECT r FROM Reservation r " +
+            "WHERE r.startDatetime BETWEEN :start AND :end " +
+            "ORDER BY r.startDatetime DESC")
+    List<Reservation> findReservationsBetweenDates(@Param("start") LocalDateTime start,
+                                                   @Param("end") LocalDateTime end);
 }
