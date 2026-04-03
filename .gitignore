@@ -1,5 +1,6 @@
 HELP.md
 target/
+scripts/
 
 # Local secrets — copy application.properties.example to application.properties
 src/main/resources/application.properties
